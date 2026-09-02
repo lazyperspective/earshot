@@ -2,6 +2,7 @@ import { Pause, Play, Repeat, RotateCcw, RotateCw, X, ZoomIn } from 'lucide-reac
 import { useStore } from '../store/useStore';
 import { player } from '../audio/player';
 import { formatTime, cx } from '../lib/format';
+import { ShortcutsPopover } from './ShortcutsPopover';
 
 export function Transport() {
   const isPlaying = useStore((s) => s.isPlaying);
@@ -77,6 +78,7 @@ export function Transport() {
         />
         <span className="mono text-[11px] w-10 text-right">{zoom.toFixed(1)}×</span>
       </div>
+      <ShortcutsPopover />
     </div>
   );
 }

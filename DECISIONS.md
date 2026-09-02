@@ -54,3 +54,17 @@ Running log of product and engineering decisions made while building Earshot. Ne
 - **Transcript words are re-mapped to working time on every EDL change** (memoized), and words that fall inside an applied cut disappear from the tab and from every transcript tool. The bundled demo transcript is treated exactly like a Whisper result.
 - **Playhead → word highlighting uses a derived Zustand selector** (binary search for the current word index), so the 60 Hz playhead updates only re-render when the active word changes; `Word` is memoized.
 - **Drag-to-select across words** sets the amber timeline selection to the first word's start and the last word's end; a plain click seeks.
+
+## Phase 7 — Polish
+
+- **Replay a sample agent session** (Activity tab empty state, or `?demo=agent`) runs a scripted sequence through the *same* `invokeTool` path with a distinct "Replay" source badge. It is clearly labelled as scripted — it exists so judges without an agent browser can watch the loop, not to fake an agent.
+- **First real WebMCP call flips the bottom panel to Activity** so the human sees the agent working without hunting for the tab.
+- **OG image and hero screenshot are rendered with headless Chrome** (DevTools protocol script in the scratchpad) from the real app at `?demo=agent`, so the README shows the actual product.
+- **Region labels are clipped** to their region box (`overflow: hidden`) so narrow filler-word cuts do not spill text over neighbours.
+- **Keyboard**: Space, ←/→ (⇧ ×5), `[` `]`, Esc, L, J/K, A/R, P, ⌘Z/⇧⌘Z — listed in the ⌨ popover next to the zoom slider.
+- **Console hygiene**: verified in a fresh tab with the demo + replay — only Vite/React info lines, no warnings or errors.
+
+## Phase 8 — Shipping
+
+- `vercel.json` gives `api/transcribe.ts` 120 s and 1 GB, and marks the demo assets immutable. Framework preset is Vite; `npm run build` runs `tsc -b` first so a type error fails the deploy.
+- The deployed URL in the README is a placeholder (`https://earshot.vercel.app`) until the project is linked; `OPENAI_API_KEY` must be added in the Vercel project settings for transcription of non-demo files.

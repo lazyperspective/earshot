@@ -49,6 +49,7 @@ function styleMarker(r: Region, m: Marker, focused: boolean, animate: boolean) {
   el.style.boxSizing = 'border-box';
   el.style.borderRadius = '3px';
   el.style.cursor = 'pointer';
+  el.style.overflow = 'hidden';
   el.style.zIndex = focused ? '4' : '2';
   if (m.kind === 'comment') {
     el.style.background = 'transparent';

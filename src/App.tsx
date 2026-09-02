@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { TopBar } from './components/TopBar';
 import { WaveformPanel } from './components/WaveformPanel';
 import { Transport } from './components/Transport';
@@ -7,6 +8,9 @@ import { EmptyState } from './components/EmptyState';
 import { useStore } from './store/useStore';
 import { useKeyboard } from './hooks/useKeyboard';
 import { useWebMCP } from './hooks/useWebMCP';
+import { runSampleSession } from './lib/sampleSession';
+
+let demoParamHandled = false;
 
 export default function App() {
   const hasAudio = useStore((s) => !!s.workingBuffer);
@@ -16,6 +20,15 @@ export default function App() {
   const loadDemo = useStore((s) => s.loadDemo);
   useKeyboard();
   useWebMCP();
+
+  // ?demo=1 loads the clip; ?demo=agent also replays the sample agent session (screenshots, quick judging).
+  useEffect(() => {
+    if (demoParamHandled) return;
+    demoParamHandled = true;
+    const mode = new URLSearchParams(window.location.search).get('demo');
+    if (!mode) return;
+    void loadDemo().then(() => { if (mode === 'agent') return runSampleSession(); });
+  }, [loadDemo]);
 
   return (
     <div className="h-full flex flex-col bg-bg text-fg">

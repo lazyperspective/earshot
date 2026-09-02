@@ -77,7 +77,7 @@ export interface ActivityEntry {
   durationMs: number;
   timestamp: number;
   ok: boolean;
-  source: 'webmcp' | 'console' | 'ui';
+  source: 'webmcp' | 'console' | 'ui' | 'replay';
   access: 'read' | 'write';
 }
 

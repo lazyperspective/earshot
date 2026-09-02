@@ -356,6 +356,8 @@ export const useStore = create<EarshotState>()((set, get) => ({
   logActivity: (entry) => set((s) => ({
     activityLog: [{ ...entry, id: uid('act'), timestamp: Date.now() }, ...s.activityLog].slice(0, 300),
     webmcp: { ...s.webmcp, lastCallAt: Date.now() },
+    // The first real agent call flips the bottom panel to the Activity feed so the human sees it happen.
+    ...(entry.source === 'webmcp' && !s.activityLog.some((e) => e.source === 'webmcp') ? { bottomTab: 'activity' as const } : {}),
   })),
 
   setWebMCP: (patch) => set((s) => ({ webmcp: { ...s.webmcp, ...patch } })),

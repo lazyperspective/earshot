@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ChevronRight, Radio } from 'lucide-react';
+import { ChevronRight, PlayCircle, Radio } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { clockTime, cx } from '../lib/format';
 import type { ActivityEntry } from '../types';
+import { runSampleSession } from '../lib/sampleSession';
 
-const SOURCE_LABEL: Record<ActivityEntry['source'], string> = { webmcp: 'WebMCP', console: 'Console', ui: 'You' };
+const SOURCE_LABEL: Record<ActivityEntry['source'], string> = { webmcp: 'WebMCP', console: 'Console', ui: 'You', replay: 'Replay' };
 
 export function ActivityFeed() {
   const log = useStore((s) => s.activityLog);
@@ -15,7 +16,11 @@ export function ActivityFeed() {
       <div className="h-full flex flex-col items-center justify-center text-center gap-2 px-8">
         <Radio size={18} className="text-fg-4" />
         <div className="text-[13px] text-fg-2">Waiting for your agent.</div>
-        <div className="text-[12px] text-fg-4 max-w-[380px]">Every WebMCP tool call — name, arguments, result and timing — streams here live. Open this page in an agent browser or use the Tool Console.</div>
+        <div className="text-[12px] text-fg-4 max-w-[400px]">Every WebMCP tool call — name, arguments, result and timing — streams here live. Open this page in an agent browser, or use the Tool Console.</div>
+        <button className="btn mt-1" onClick={() => void runSampleSession()} title="Runs the same tools an agent would, through the same code path. No model involved.">
+          <PlayCircle size={14} /> Replay a sample agent session
+        </button>
+        <div className="text-[11px] text-fg-4">Scripted locally · same tool path · no model</div>
       </div>
     );
   }
@@ -33,7 +38,7 @@ export function ActivityFeed() {
               >
                 <ChevronRight size={12} className={cx('text-fg-4 transition-transform duration-150', isOpen && 'rotate-90')} />
                 <span className="mono text-[11px] text-fg-4 w-[62px] shrink-0">{clockTime(e.timestamp)}</span>
-                <span className={cx('chip w-[64px] justify-center shrink-0', e.source === 'webmcp' ? 'bg-accent/12 text-accent' : e.source === 'console' ? 'bg-panel-3 text-fg-2' : 'bg-amber/12 text-amber')}>
+                <span className={cx('chip w-[64px] justify-center shrink-0', e.source === 'webmcp' ? 'bg-accent/12 text-accent' : e.source === 'ui' ? 'bg-amber/12 text-amber' : 'bg-panel-3 text-fg-2')}>
                   {SOURCE_LABEL[e.source]}
                 </span>
                 <span className="mono text-[12.5px] text-fg w-[160px] shrink-0 truncate">{e.tool}</span>
