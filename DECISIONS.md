@@ -68,3 +68,5 @@ Running log of product and engineering decisions made while building Earshot. Ne
 
 - `vercel.json` gives `api/transcribe.ts` 120 s and 1 GB, and marks the demo assets immutable. Framework preset is Vite; `npm run build` runs `tsc -b` first so a type error fails the deploy.
 - The project is linked to Vercel as `earshot` (production domain `https://earshot-beige.vercel.app`); `OPENAI_API_KEY` must be added in the Vercel project settings for transcription of non-demo files.
+- **The transcription core lives inside `api/transcribe.ts`** (no `api/_lib` helper): Vercel's Node runtime loads functions as ESM and refused the extension-less relative import at runtime (`ERR_MODULE_NOT_FOUND`), found via `get_runtime_logs`. The Vite dev middleware imports the same named export.
+- **Deployed** as project `earshot` (production domain `https://earshot-beige.vercel.app`, Deployment Protection left at Vercel's default so per-deployment URLs redirect to SSO while the production domain is public).

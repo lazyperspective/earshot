@@ -24,8 +24,10 @@ export async function transcribeCore(body: Uint8Array, contentType: string, env:
   const ext = type.includes('wav') ? 'wav' : type.includes('mpeg') || type.includes('mp3') ? 'mp3' : type.includes('mp4') || type.includes('m4a') ? 'm4a' : type.includes('ogg') ? 'ogg' : type.includes('flac') ? 'flac' : 'webm';
   const model = env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1';
 
+  const bytes = new Uint8Array(body.byteLength);
+  bytes.set(body);
   const form = new FormData();
-  form.append('file', new Blob([body], { type }), `audio.${ext}`);
+  form.append('file', new Blob([bytes], { type }), `audio.${ext}`);
   form.append('model', model);
   form.append('response_format', 'verbose_json');
   form.append('timestamp_granularities[]', 'word');
