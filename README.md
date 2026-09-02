@@ -44,7 +44,7 @@ Implementation notes (current spec, Sept 2026):
 | --- | --- | --- |
 | `get_status` | read | File, working/source duration, sample rate, channels, EDL op count, proposal counts, transcript state, selection, playhead. |
 | `get_selection` | read | The human's current `{ start, end }` selection and playhead. |
-| `get_transcript` | read · untrusted | Word-level transcript (`{ text, start, end }`), plain text and segments; optional range. Triggers Whisper on first call. |
+| `get_transcript` | read · untrusted | Word-level transcript (`{ text, start, end }`), plain text and segments; optional range. Triggers transcription on first call with the engine chosen in the Transcript tab (OpenAI API or local WebGPU Whisper). |
 | `find_in_transcript` | read · untrusted | Case-insensitive phrase search → time ranges with context. |
 | `detect_silences` | read | Gaps below `threshold_db` (dBFS RMS, 20 ms windows) longer than `min_duration_s`. |
 | `get_loudness_profile` | read | Per-window `rms_db`/`peak_db` + integrated, peak and dynamic range (dBFS RMS, not LUFS). |
@@ -80,6 +80,17 @@ Implementation notes (current spec, Sept 2026):
 
 - Enable `chrome://flags/#enable-webmcp-testing` and use any WebMCP-aware extension or the DevTools console (`await document.modelContext.getTools()`), **or**
 - Use the built-in **Tool Console** tab: pick a tool, edit the JSON arguments, run it, and read exactly what an agent would receive. The **Activity** tab's *"Replay a sample agent session"* runs a scripted sequence through the same tool path (no model involved) so you can see the loop end to end. `?demo=1` auto-loads the clip; `?demo=agent` also runs the replay.
+
+## Transcription engines
+
+The Transcript tab lets the human pick how audio gets transcribed; `get_transcript` and friends use the same choice.
+
+| Engine | How | Needs |
+| --- | --- | --- |
+| **OpenAI Whisper API** | 16 kHz mono chunks ≤ 120 s are POSTed to `api/transcribe.ts`, which calls `whisper-1` with word timestamps. | `OPENAI_API_KEY` on the server |
+| **Local · WebGPU** | [transformers.js](https://github.com/huggingface/transformers.js) runs an ONNX Whisper model (`onnx-community/whisper-*_timestamped`, which carry the alignment heads needed for word timestamps) in a Web Worker on WebGPU, falling back to WebAssembly. One-time download (Tiny 120 MB · Base 206 MB · Small 586 MB), cached by the browser; audio never leaves the device. | A WebGPU-capable browser (Chrome, Edge, Safari 26) |
+
+Pick **Local · WebGPU**, click **Download & transcribe**, and you are done — no key required.
 
 ## Local development
 

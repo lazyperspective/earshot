@@ -70,3 +70,12 @@ Running log of product and engineering decisions made while building Earshot. Ne
 - The project is linked to Vercel as `earshot` (production domain `https://earshot-beige.vercel.app`); `OPENAI_API_KEY` must be added in the Vercel project settings for transcription of non-demo files.
 - **The transcription core lives inside `api/transcribe.ts`** (no `api/_lib` helper): Vercel's Node runtime loads functions as ESM and refused the extension-less relative import at runtime (`ERR_MODULE_NOT_FOUND`), found via `get_runtime_logs`. The Vite dev middleware imports the same named export.
 - **Deployed** as project `earshot` (production domain `https://earshot-beige.vercel.app`, Deployment Protection left at Vercel's default so per-deployment URLs redirect to SSO while the production domain is public).
+
+## Post-submission — Local Whisper on WebGPU
+
+- **Engine choice is the human's**, persisted in `localStorage` and shown in the Transcript tab; every transcript tool follows it. OpenAI stays the default because it needs no download, but the local path is one click ("Download & transcribe").
+- **transformers.js in a Web Worker** with `device: 'webgpu'` (fp32 encoder + q4 decoder, the combination the upstream WebGPU demo ships) and a WASM fallback (q8) when `navigator.gpu` is absent. The main thread only ever sees progress messages and results.
+- **`_timestamped` model variants** (`onnx-community/whisper-*_timestamped`) are required: the plain exports lack the cross-attention outputs/alignment heads that `return_timestamps: 'word'` needs.
+- **Own chunking at ≤ 28 s** (split at the quietest window) so each call fits Whisper's 30 s context and transformers.js never has to stitch internal chunks; word timestamps are offset and clamped to the audio length (DTW can overshoot the end).
+- **Model files are cached by the browser Cache API** through transformers.js, so a second load is instant; the picker shows download size per device. `optimizeDeps.exclude` keeps Vite from pre-bundling the library, whose ONNX runtime assets resolve via `import.meta.url`.
+- **Measured on an Apple-silicon Mac in Chrome:** Tiny · English downloads in ~8 s and transcribes the 80 s demo in ~6 s on WebGPU; fillers are kept, timings match the bundled transcript within ~0.1 s.

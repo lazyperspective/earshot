@@ -1,11 +1,12 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, FileText, Loader2, RefreshCw } from 'lucide-react';
+import { AlertCircle, Loader2, RefreshCw, Settings2, X } from 'lucide-react';
 import { useStore, getCuts } from '../store/useStore';
 import { sourceToWorking } from '../audio/edl';
 import { ensureTranscript } from '../transcript/service';
 import { isFillerToken } from '../transcript/text';
 import { player } from '../audio/player';
 import { cx, formatTime } from '../lib/format';
+import { TranscriptionSettings } from './TranscriptionSettings';
 
 interface WWord { text: string; start: number; end: number; filler: boolean; para: boolean }
 
@@ -19,16 +20,15 @@ function indexAt(words: WWord[], t: number): number {
   return -1;
 }
 
-const Word = memo(function Word({ w, i, active, selected, onDown, onEnter, onUp }: {
+const Word = memo(function Word({ w, i, active, selected, onDown, onEnter }: {
   w: WWord; i: number; active: boolean; selected: boolean;
-  onDown: (i: number) => void; onEnter: (i: number) => void; onUp: (i: number) => void;
+  onDown: (i: number) => void; onEnter: (i: number) => void;
 }) {
   return (
     <span
       data-i={i}
       onMouseDown={(e) => { e.preventDefault(); onDown(i); }}
       onMouseEnter={() => onEnter(i)}
-      onMouseUp={() => onUp(i)}
       className={cx(
         'inline-block px-[2px] rounded-[3px] cursor-pointer select-none transition-colors duration-100',
         active ? 'bg-accent text-bg' : selected ? 'bg-amber/25 text-fg' : 'hover:bg-panel-3',
@@ -40,13 +40,22 @@ const Word = memo(function Word({ w, i, active, selected, onDown, onEnter, onUp 
   );
 });
 
+function engineLabel(engine?: string, model?: string): string {
+  if (engine === 'bundled') return 'bundled demo transcript';
+  if (engine === 'local') return `Local Whisper · ${model ?? ''}`;
+  if (engine === 'openai') return `OpenAI · ${model ?? 'whisper-1'}`;
+  return model ?? 'transcript';
+}
+
 export function TranscriptPanel() {
   const transcript = useStore((s) => s.transcript);
+  const engine = useStore((s) => s.transcription.engine);
   const edl = useStore((s) => s.edl);
   const selection = useStore((s) => s.selection);
   const setSelection = useStore((s) => s.setSelection);
   const hasAudio = useStore((s) => !!s.workingBuffer);
   const [drag, setDrag] = useState<{ a: number; b: number } | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const dragRef = useRef<{ a: number; b: number } | null>(null);
   const activeRef = useRef<HTMLDivElement>(null);
 
@@ -88,7 +97,6 @@ export function TranscriptPanel() {
 
   const onDown = (i: number) => { dragRef.current = { a: i, b: i }; setDrag({ a: i, b: i }); };
   const onEnter = (i: number) => { if (dragRef.current) { dragRef.current.b = i; setDrag({ ...dragRef.current }); } };
-  const onUp = () => { /* handled by window mouseup */ };
 
   const selRange = useMemo(() => {
     if (drag) return { lo: Math.min(drag.a, drag.b), hi: Math.max(drag.a, drag.b) };
@@ -105,10 +113,9 @@ export function TranscriptPanel() {
   if (transcript.status === 'idle') {
     return (
       <Center>
-        <FileText size={18} className="text-fg-4" />
-        <div className="text-[13px] text-fg-2">No transcript yet.</div>
-        <div className="text-[12px] text-fg-4 max-w-[400px]">Transcribe with OpenAI Whisper (word timestamps) via the server, or let your agent call <span className="mono text-fg-3">get_transcript</span>. The demo clip ships with a bundled transcript.</div>
-        <button className="btn btn-primary mt-1" onClick={() => void ensureTranscript()}><FileText size={14} /> Transcribe</button>
+        <div className="text-[13px] text-fg-2 mb-1">No transcript yet. Choose how to transcribe:</div>
+        <TranscriptionSettings hasTranscript={false} />
+        <div className="text-[11.5px] text-fg-4 mt-1">Your agent can also call <span className="mono text-fg-3">get_transcript</span> — it uses the engine selected here. The demo clip ships with a bundled transcript.</div>
       </Center>
     );
   }
@@ -117,7 +124,8 @@ export function TranscriptPanel() {
       <Center>
         <Loader2 size={18} className="text-accent animate-spin" />
         <div className="text-[13px] text-fg-2">{transcript.note ?? 'Transcribing…'}</div>
-        <div className="w-[260px] h-1 rounded-full bg-panel-3 overflow-hidden"><div className="h-full bg-accent transition-all duration-300" style={{ width: `${Math.round(transcript.progress * 100)}%` }} /></div>
+        <div className="w-[300px] h-1 rounded-full bg-panel-3 overflow-hidden"><div className="h-full bg-accent transition-all duration-300" style={{ width: `${Math.round(transcript.progress * 100)}%` }} /></div>
+        <div className="mono text-[11px] text-fg-4">{Math.round(transcript.progress * 100)}%</div>
       </Center>
     );
   }
@@ -126,8 +134,8 @@ export function TranscriptPanel() {
       <Center>
         <AlertCircle size={18} className="text-danger" />
         <div className="text-[13px] text-fg-2">Transcription failed</div>
-        <div className="text-[12px] text-danger max-w-[460px]">{transcript.message}</div>
-        <button className="btn mt-1" onClick={() => void ensureTranscript({ force: true })}><RefreshCw size={13} /> Retry</button>
+        <div className="text-[12px] text-danger max-w-[520px] mb-2">{transcript.message}</div>
+        <TranscriptionSettings hasTranscript={false} />
       </Center>
     );
   }
@@ -138,26 +146,35 @@ export function TranscriptPanel() {
       <div className="h-9 shrink-0 flex items-center gap-3 px-4 border-b border-line text-[11.5px] text-fg-3">
         <span><span className="text-fg-2 font-medium">{words.length}</span> words</span>
         <span>·</span>
-        <span>{t.language?.toUpperCase() ?? 'EN'}</span>
+        <span>{t.language?.toUpperCase() ?? 'AUTO'}</span>
         <span>·</span>
-        <span>{transcript.cached ? 'cached' : 'transcribed just now'}</span>
+        <span className="chip bg-panel-3 text-fg-2 normal-case tracking-normal font-medium">{engineLabel(t.engine, t.model)}</span>
         <span className="text-fg-4">· click a word to seek, drag to select · <span className="underline decoration-dotted decoration-amber/70">dotted</span> = filler</span>
         <div className="flex-1" />
         {activeIdx >= 0 && <span className="mono text-fg-4">{formatTime(words[activeIdx].start, { ms: true })}</span>}
-        <button className="btn btn-ghost h-6 px-1.5 text-[11px] text-fg-3" title="Ignore caches and transcribe again with Whisper" onClick={() => void ensureTranscript({ force: true })}><RefreshCw size={11} /> Re-transcribe</button>
+        <button className="btn btn-ghost h-6 px-1.5 text-[11px] text-fg-3" title={`Ignore caches and transcribe again with ${engine === 'local' ? 'local Whisper' : 'OpenAI'}`} onClick={() => void ensureTranscript({ force: true })}><RefreshCw size={11} /> Re-transcribe</button>
+        <button className={cx('btn btn-ghost h-6 px-1.5 text-[11px] text-fg-3', showSettings && 'text-fg bg-panel-3')} title="Transcription engine settings" aria-label="Transcription settings" onClick={() => setShowSettings((v) => !v)}>
+          {showSettings ? <X size={12} /> : <Settings2 size={12} />}
+        </button>
       </div>
-      <div ref={activeRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-3 text-[14px] leading-[1.9] text-fg">
-        {words.map((w, i) => (
-          <span key={i}>
-            {w.para && <br />}
-            <Word w={w} i={i} active={i === activeIdx} selected={!!selRange && i >= selRange.lo && i <= selRange.hi} onDown={onDown} onEnter={onEnter} onUp={onUp} />{' '}
-          </span>
-        ))}
-      </div>
+      {showSettings ? (
+        <div className="flex-1 min-h-0 overflow-y-auto flex justify-center px-5 py-4">
+          <TranscriptionSettings hasTranscript onDone={() => setShowSettings(false)} />
+        </div>
+      ) : (
+        <div ref={activeRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-3 text-[14px] leading-[1.9] text-fg">
+          {words.map((w, i) => (
+            <span key={i}>
+              {w.para && <br />}
+              <Word w={w} i={i} active={i === activeIdx} selected={!!selRange && i >= selRange.lo && i <= selRange.hi} onDown={onDown} onEnter={onEnter} />{' '}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="h-full flex flex-col items-center justify-center text-center gap-2 px-8">{children}</div>;
+  return <div className="h-full overflow-y-auto flex flex-col items-center justify-center text-center gap-2 px-8 py-4">{children}</div>;
 }

@@ -35,6 +35,11 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
+    chunkSizeWarningLimit: 6000,
+  },
+  optimizeDeps: {
+    // transformers.js resolves its ONNX runtime assets via import.meta.url; pre-bundling breaks those paths.
+    exclude: ['@huggingface/transformers'],
   },
   worker: {
     format: 'es',

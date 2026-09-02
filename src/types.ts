@@ -60,6 +60,9 @@ export interface Transcript {
   words: TranscriptWord[];
   segments: TranscriptSegment[];
   language?: string;
+  /** Which engine produced it: 'openai' | 'local' | 'bundled'. */
+  engine?: string;
+  model?: string;
 }
 
 export type TranscriptState =
@@ -124,6 +127,23 @@ export interface Selection {
 }
 
 export type BottomTab = 'transcript' | 'activity' | 'console';
+
+export type TranscriptionEngine = 'openai' | 'local';
+export type LocalModelKey = 'tiny.en' | 'base.en' | 'small.en' | 'base';
+export type LocalDevice = 'webgpu' | 'wasm';
+
+export interface TranscriptionSettings {
+  engine: TranscriptionEngine;
+  model: LocalModelKey;
+}
+
+export interface LocalWhisperState {
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  progress: number;
+  note?: string;
+  device: LocalDevice | null;
+  modelId: string | null;
+}
 
 export interface ToolSpec {
   name: string;

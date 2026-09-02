@@ -192,7 +192,7 @@ export function getToolDefs(): ToolDef[] {
     },
     {
       name: 'get_transcript',
-      description: 'Get the word-level transcript of the working audio, optionally limited to a time range. Returns words as { text, start, end } in seconds, the plain text, and sentence segments. Triggers transcription (OpenAI Whisper via the server) the first time; if it is still running you get { status: "transcribing", progress } — call again in a few seconds. Times already account for applied cuts. Read-only.',
+      description: 'Get the word-level transcript of the working audio, optionally limited to a time range. Returns words as { text, start, end } in seconds, the plain text, and sentence segments. Triggers transcription the first time using the engine the user chose in the Transcript tab (OpenAI Whisper API via the server, or Whisper running locally on WebGPU — the progress note may include a one-time model download); if it is still running you get { status: "transcribing", progress } — call again in a few seconds. Times already account for applied cuts. Read-only.',
       inputSchema: {
         type: 'object',
         properties: {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type {
   ActivityEntry, Author, BottomTab, EDL, EditOp, Marker, MarkerEdit, MarkerKind, MarkerStatus,
-  Selection, TranscriptState, WebMCPStatus,
+  Selection, TranscriptState, WebMCPStatus, TranscriptionSettings, LocalWhisperState, TranscriptionEngine, LocalModelKey,
 } from '../types';
 import { decodeAudio } from '../audio/decode';
 import { renderEdl } from '../audio/render';
@@ -46,6 +46,8 @@ export interface EarshotState {
   markers: Marker[];
 
   transcript: TranscriptState;
+  transcription: TranscriptionSettings;
+  localWhisper: LocalWhisperState;
 
   selection: Selection | null;
   playhead: number;
@@ -89,6 +91,9 @@ export interface EarshotState {
   setFocusedMarker: (id: string | null) => void;
   setPreviewing: (id: string | null) => void;
   setTranscript: (t: TranscriptState) => void;
+  setTranscriptionEngine: (engine: TranscriptionEngine) => void;
+  setLocalModel: (model: LocalModelKey) => void;
+  setLocalWhisper: (patch: Partial<LocalWhisperState>) => void;
 
   // export / agent
   exportWav: () => Promise<{ fileName: string; bytes: number; duration: number }>;
@@ -152,11 +157,23 @@ const initialProject = {
   lastProposalAt: null,
 };
 
+const SETTINGS_KEY = 'earshot.transcription.v1';
+function loadSettings(): TranscriptionSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) { const j = JSON.parse(raw); if ((j.engine === 'openai' || j.engine === 'local') && typeof j.model === 'string') return { engine: j.engine, model: j.model }; }
+  } catch { /* private mode etc. */ }
+  return { engine: 'openai', model: 'base.en' };
+}
+function saveSettings(s: TranscriptionSettings) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* ignore */ } }
+
 let renderChain: Promise<void> = Promise.resolve();
 
 export const useStore = create<EarshotState>()((set, get) => ({
   ...initialProject,
   renderVersion: 0,
+  transcription: loadSettings(),
+  localWhisper: { status: 'idle', progress: 0, device: null, modelId: null },
   bottomTab: 'transcript',
   activityLog: [],
   webmcp: { available: false, native: false, polyfill: false, toolCount: 0, readCount: 0, writeCount: 0, lastCallAt: null },
@@ -328,6 +345,9 @@ export const useStore = create<EarshotState>()((set, get) => ({
   setFocusedMarker: (focusedMarkerId) => set({ focusedMarkerId }),
   setPreviewing: (previewingId) => set({ previewingId }),
   setTranscript: (transcript) => set({ transcript }),
+  setTranscriptionEngine: (engine) => set((s) => { const t = { ...s.transcription, engine }; saveSettings(t); return { transcription: t }; }),
+  setLocalModel: (model) => set((s) => { const t = { ...s.transcription, model }; saveSettings(t); return { transcription: t }; }),
+  setLocalWhisper: (patch) => set((s) => ({ localWhisper: { ...s.localWhisper, ...patch } })),
 
   // ---------- export / agent ----------
   exportWav: async () => {
