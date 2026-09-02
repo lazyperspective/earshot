@@ -2,7 +2,7 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { transcribeCore } from './api/_lib/transcribe-core';
+import { transcribeCore } from './api/transcribe';
 
 /** Dev-only stand-in for the Vercel function so `npm run dev` can transcribe with OPENAI_API_KEY in .env. */
 function apiDevPlugin(): Plugin {
