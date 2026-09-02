@@ -5,11 +5,15 @@ import { ProposalsPanel } from './components/ProposalsPanel';
 import { BottomTabs } from './components/BottomTabs';
 import { EmptyState } from './components/EmptyState';
 import { useStore } from './store/useStore';
+import { useKeyboard } from './hooks/useKeyboard';
 
 export default function App() {
   const hasAudio = useStore((s) => !!s.workingBuffer);
   const isLoading = useStore((s) => s.isLoading);
   const loadError = useStore((s) => s.loadError);
+  const loadFile = useStore((s) => s.loadFile);
+  const loadDemo = useStore((s) => s.loadDemo);
+  useKeyboard();
 
   return (
     <div className="h-full flex flex-col bg-bg text-fg">
@@ -23,7 +27,7 @@ export default function App() {
               <BottomTabs />
             </>
           ) : (
-            <EmptyState onFile={() => {}} onDemo={() => {}} loading={isLoading} error={loadError} />
+            <EmptyState onFile={(f) => void loadFile(f)} onDemo={() => void loadDemo()} loading={isLoading} error={loadError} />
           )}
         </main>
         <ProposalsPanel />
