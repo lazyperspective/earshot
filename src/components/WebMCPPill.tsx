@@ -13,12 +13,12 @@ export function WebMCPPill() {
     return () => clearTimeout(t);
   }, [webmcp.lastCallAt]);
 
-  const live = webmcp.available && webmcp.toolCount > 0;
+  const live = webmcp.available && webmcp.native && webmcp.toolCount > 0;
   const label = !webmcp.available
     ? 'WebMCP not detected'
     : webmcp.native
       ? `${webmcp.toolCount} tools live · ${webmcp.readCount} read · ${webmcp.writeCount} write`
-      : `${webmcp.toolCount} tools · polyfill active`;
+      : `WebMCP not detected — polyfill active · ${webmcp.toolCount} tools`;
 
   const title = webmcp.native
     ? 'Native document.modelContext detected. Tools are visible to agent browsers (ChatGPT desktop, Chrome with WebMCP).'

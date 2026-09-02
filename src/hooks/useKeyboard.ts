@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { player } from '../audio/player';
+import { reviewMarker } from '../lib/review';
+import { previewMarker, stopPreview } from '../audio/preview';
 
 function isTyping(e: KeyboardEvent): boolean {
   const el = e.target as HTMLElement | null;
@@ -50,19 +52,22 @@ export function useKeyboard() {
       if (e.key === 'ArrowLeft') { e.preventDefault(); player.skip(e.shiftKey ? -5 : -1); return; }
       if (e.key === 'ArrowRight') { e.preventDefault(); player.skip(e.shiftKey ? 5 : 1); return; }
       if (e.key.toLowerCase() === 'l') { s.toggleLoop(); return; }
+      if (e.key.toLowerCase() === 'p' && s.focusedMarkerId) {
+        const m = s.markers.find((x) => x.id === s.focusedMarkerId);
+        if (m) { if (s.previewingId === m.id) stopPreview(); else void previewMarker(m); }
+        return;
+      }
 
       // proposal review
       const focused = s.focusedMarkerId ? s.markers.find((m) => m.id === s.focusedMarkerId) : null;
       const pendingOrder = s.markers.filter((m) => m.status === 'pending' || m.status === 'approved');
       if (e.key.toLowerCase() === 'a' && focused) {
-        s.setMarkerStatus(focused.id, 'approved');
-        s.logActivity({ tool: 'approve', args: { id: focused.id }, result: { status: 'approved' }, summary: `Approved ${focused.kind} proposal`, durationMs: 0, ok: true, source: 'ui', access: 'write' });
+        reviewMarker(focused.id, 'approved');
         focusNext(focused.id, pendingOrder);
         return;
       }
       if (e.key.toLowerCase() === 'r' && focused) {
-        s.setMarkerStatus(focused.id, 'rejected');
-        s.logActivity({ tool: 'reject', args: { id: focused.id }, result: { status: 'rejected' }, summary: `Rejected ${focused.kind} proposal`, durationMs: 0, ok: true, source: 'ui', access: 'write' });
+        reviewMarker(focused.id, 'rejected');
         focusNext(focused.id, pendingOrder);
         return;
       }

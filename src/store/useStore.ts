@@ -53,6 +53,7 @@ export interface EarshotState {
   loopSelection: boolean;
   zoom: number;
   focusedMarkerId: string | null;
+  previewingId: string | null;
   bottomTab: BottomTab;
   exportProgress: number | null;
   lastProposalAt: number | null;
@@ -86,6 +87,7 @@ export interface EarshotState {
   setZoom: (zoom: number) => void;
   setBottomTab: (tab: BottomTab) => void;
   setFocusedMarker: (id: string | null) => void;
+  setPreviewing: (id: string | null) => void;
   setTranscript: (t: TranscriptState) => void;
 
   // export / agent
@@ -145,6 +147,7 @@ const initialProject = {
   loopSelection: false,
   zoom: 1,
   focusedMarkerId: null,
+  previewingId: null,
   exportProgress: null,
   lastProposalAt: null,
 };
@@ -284,7 +287,9 @@ export const useStore = create<EarshotState>()((set, get) => ({
 
   applyMarkers: async (ids, force = false) => {
     const s = get();
-    const targets = ids ? s.markers.filter((m) => ids.includes(m.id)) : s.markers.filter((m) => m.status === 'approved');
+    const targets = ids
+      ? s.markers.filter((m) => ids.includes(m.id))
+      : s.markers.filter((m) => m.kind !== 'comment' && (m.status === 'approved' || (force && m.status === 'pending')));
     const skipped: ApplyResult['skipped'] = [];
     if (ids) for (const id of ids) if (!s.markers.some((m) => m.id === id)) skipped.push({ id, reason: 'not found' });
     const applied: Marker[] = [];
@@ -321,6 +326,7 @@ export const useStore = create<EarshotState>()((set, get) => ({
   setZoom: (zoom) => set({ zoom: Math.max(1, Math.min(40, zoom)) }),
   setBottomTab: (bottomTab) => set({ bottomTab }),
   setFocusedMarker: (focusedMarkerId) => set({ focusedMarkerId }),
+  setPreviewing: (previewingId) => set({ previewingId }),
   setTranscript: (transcript) => set({ transcript }),
 
   // ---------- export / agent ----------

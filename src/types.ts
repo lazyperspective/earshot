@@ -131,5 +131,7 @@ export interface ToolSpec {
   inputSchema: Record<string, unknown>;
   readOnly: boolean;
   destructive: boolean;
+  /** Output may contain content from the audio (transcript text) that the agent should treat as untrusted. */
+  untrusted?: boolean;
   example: Record<string, unknown>;
 }

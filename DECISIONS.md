@@ -33,3 +33,18 @@ Running log of product and engineering decisions made while building Earshot. Ne
 - **Transcription uploads 16 kHz mono WAV chunks ≤ 120 s** split at the quietest window near the boundary; each chunk stays under Vercel's 4.5 MB body limit and results are merged with offsets. Whisper is prompted with filler words so it keeps "um"/"uh".
 - **Bundled demo transcript.** No local Whisper was available, so the demo clip is synthesized phrase-by-phrase and `public/demo-transcript.json` (hash-keyed) carries phrase-accurate word timings. It is used only when the loaded file's SHA-256 matches; a "Re-transcribe" action bypasses every cache.
 - **Local dev API.** A tiny Vite middleware serves `/api/transcribe` from the same `api/_lib/transcribe-core.ts` the Vercel function uses, reading `OPENAI_API_KEY` from `.env`.
+
+## Phase 4 — WebMCP
+
+- **`document.modelContext` only**, feature-detected once at startup *before* the polyfill is installed (StrictMode's double effect run would otherwise see the polyfill and report "native"). `@mcp-b/webmcp-polyfill` v5 is initialised only when the native context is absent.
+- **Tools are registered in parallel** (`Promise.allSettled`). The polyfill settles each `registerTool()` on a timer tick, and background tabs throttle timers to ~1/s, so sequential awaits could take 20+ s in a hidden tab. Parallel registration makes every tool visible to `getTools()` immediately.
+- **Lifetime = AbortController.** One controller per registration set; it is aborted on unmount and whenever the loaded/unloaded state flips (idle set: just `get_status`; full set: 23 tools).
+- **Annotations:** `readOnlyHint` on all 10 read tools; `destructiveHint: true` on tools that mutate audio (apply_proposals, normalize, undo, redo); `untrustedContentHint: true` on the four transcript-derived tools because spoken audio can contain prompt-injection text. Native browsers ignore hints they do not know.
+- **Status pill:** green "N tools live · R read · W write" only with native WebMCP; grey "WebMCP not detected — polyfill active · N tools" otherwise, so a viewer can tell whether an agent browser is actually connected.
+- **Debug handle:** `window.earshot = { store, invokeTool, tools }` is exposed for console testing; it is not a security surface (same-origin page code already has everything).
+
+## Phase 5 — Proposals
+
+- **Preview renders a temporary EDL** (current ops + the proposal's op) through the same renderer, then plays 1 s before → through → 1 s after with a plain `AudioBufferSourceNode`; the last four renders are cached. Nothing is written to the EDL.
+- **Cards are ordered pending → approved → rejected → applied**, then by time, so the human's queue is always at the top. Focus (click, `j`/`k`) syncs with the waveform region; `A`/`R`/`P` approve/reject/preview the focused card.
+- **Human review is logged** to the Activity feed as "You" entries (approve/reject/restore/apply), so the video shows the full human-agent loop in one place.

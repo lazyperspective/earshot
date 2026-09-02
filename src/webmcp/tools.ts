@@ -204,6 +204,7 @@ export function getToolDefs(): ToolDef[] {
       },
       readOnly: true,
       destructive: false,
+      untrusted: true,
       example: {},
       execute: async (input) => {
         const { s, duration } = requireAudio();
@@ -236,6 +237,7 @@ export function getToolDefs(): ToolDef[] {
       },
       readOnly: true,
       destructive: false,
+      untrusted: true,
       example: { query: 'lost my place' },
       execute: async (input) => {
         const { s } = requireAudio();
@@ -324,6 +326,7 @@ export function getToolDefs(): ToolDef[] {
       },
       readOnly: true,
       destructive: false,
+      untrusted: true,
       example: { words: ['um', 'uh', 'like', 'you know', 'so'] },
       execute: async (input) => {
         const { s } = requireAudio();
@@ -342,6 +345,7 @@ export function getToolDefs(): ToolDef[] {
       inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
       readOnly: true,
       destructive: false,
+      untrusted: true,
       example: {},
       execute: async () => {
         const { s, buffer } = requireAudio();

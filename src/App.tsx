@@ -6,6 +6,7 @@ import { BottomTabs } from './components/BottomTabs';
 import { EmptyState } from './components/EmptyState';
 import { useStore } from './store/useStore';
 import { useKeyboard } from './hooks/useKeyboard';
+import { useWebMCP } from './hooks/useWebMCP';
 
 export default function App() {
   const hasAudio = useStore((s) => !!s.workingBuffer);
@@ -14,6 +15,7 @@ export default function App() {
   const loadFile = useStore((s) => s.loadFile);
   const loadDemo = useStore((s) => s.loadDemo);
   useKeyboard();
+  useWebMCP();
 
   return (
     <div className="h-full flex flex-col bg-bg text-fg">
