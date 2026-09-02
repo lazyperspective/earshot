@@ -67,4 +67,4 @@ Running log of product and engineering decisions made while building Earshot. Ne
 ## Phase 8 — Shipping
 
 - `vercel.json` gives `api/transcribe.ts` 120 s and 1 GB, and marks the demo assets immutable. Framework preset is Vite; `npm run build` runs `tsc -b` first so a type error fails the deploy.
-- The deployed URL in the README is a placeholder (`https://earshot.vercel.app`) until the project is linked; `OPENAI_API_KEY` must be added in the Vercel project settings for transcription of non-demo files.
+- The project is linked to Vercel as `earshot` (production domain `https://earshot-beige.vercel.app`); `OPENAI_API_KEY` must be added in the Vercel project settings for transcription of non-demo files.

@@ -67,7 +67,7 @@ Implementation notes (current spec, Sept 2026):
 
 ## Try it with ChatGPT / Codex
 
-1. Open the deployed app in the ChatGPT desktop app's built-in browser (GPT-5.6 Sol or Terra): **https://earshot.vercel.app** (or your own deployment).
+1. Open the deployed app in the ChatGPT desktop app's built-in browser (GPT-5.6 Sol or Terra): **https://earshot-beige.vercel.app** (or your own deployment).
 2. Click **Load demo podcast clip** (or drop your own MP3/WAV/M4A).
 3. Click the **Site tools** icon in the address bar — you should see 23 tools with the read/write split.
 4. Send:
