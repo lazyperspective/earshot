@@ -163,9 +163,9 @@ async function transcribeViaLocal(source: AudioBuffer, onProgress: Progress): Pr
       // Whisper's DTW timestamps can overshoot the end of a chunk; clamp to the audio.
       const s = Math.min(Math.max(0, c.timestamp[0] ?? 0), chunkEnd);
       const e = Math.min(chunkEnd, c.timestamp[1] ?? s + 0.4);
-      const start = Math.min(total, s + offset);
-      const end = Math.min(total, Math.max(s + 0.02, e) + offset);
-      words.push({ text: t, start: r3(start), end: r3(Math.max(start, end)) });
+      const start = Math.max(0, Math.min(s + offset, total - 0.05));
+      const end = Math.min(total, Math.max(start + 0.02, e + offset));
+      words.push({ text: t, start: r3(start), end: r3(end) });
     }
   }
   return { text: texts.join(' '), words, segments: wordsToSegments(words), language: info.multilingual ? undefined : 'en', engine: 'local', model: `${info.label} · ${device}` };
