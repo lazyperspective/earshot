@@ -48,3 +48,9 @@ Running log of product and engineering decisions made while building Earshot. Ne
 - **Preview renders a temporary EDL** (current ops + the proposal's op) through the same renderer, then plays 1 s before → through → 1 s after with a plain `AudioBufferSourceNode`; the last four renders are cached. Nothing is written to the EDL.
 - **Cards are ordered pending → approved → rejected → applied**, then by time, so the human's queue is always at the top. Focus (click, `j`/`k`) syncs with the waveform region; `A`/`R`/`P` approve/reject/preview the focused card.
 - **Human review is logged** to the Activity feed as "You" entries (approve/reject/restore/apply), so the video shows the full human-agent loop in one place.
+
+## Phase 6 — Transcript
+
+- **Transcript words are re-mapped to working time on every EDL change** (memoized), and words that fall inside an applied cut disappear from the tab and from every transcript tool. The bundled demo transcript is treated exactly like a Whisper result.
+- **Playhead → word highlighting uses a derived Zustand selector** (binary search for the current word index), so the 60 Hz playhead updates only re-render when the active word changes; `Word` is memoized.
+- **Drag-to-select across words** sets the amber timeline selection to the first word's start and the last word's end; a plain click seeks.

@@ -4,6 +4,7 @@ import { useStore, getCuts, markerWorkingRange } from '../store/useStore';
 import { reviewMarker, approveAll, applyApproved } from '../lib/review';
 import { previewMarker, stopPreview } from '../audio/preview';
 import { player } from '../audio/player';
+import { sourceToWorking } from '../audio/edl';
 import { formatTime, cx } from '../lib/format';
 import type { Marker } from '../types';
 
@@ -111,7 +112,11 @@ export function ProposalsPanel() {
                           </span>
                         </div>
                         <div className="mono text-[11.5px] text-fg-3 mt-0.5">
-                          {w ? <>{formatTime(w.start, { ms: true })} → {formatTime(w.end, { ms: true })} <span className="text-fg-4">· {(w.end - w.start).toFixed(2)}s</span></> : <span className="text-fg-4">inside an applied cut</span>}
+                          {w
+                            ? <>{formatTime(w.start, { ms: true })} → {formatTime(w.end, { ms: true })} <span className="text-fg-4">· {(w.end - w.start).toFixed(2)}s</span></>
+                            : m.status === 'applied' && m.kind === 'cut'
+                              ? <>at {formatTime(sourceToWorking(m.start, cuts), { ms: true })} <span className="text-fg-4">· −{(m.end - m.start).toFixed(2)}s removed</span></>
+                              : <span className="text-fg-4">inside an applied cut</span>}
                         </div>
                         <p className="text-[12.5px] text-fg-2 mt-1.5 leading-snug">{m.note}</p>
                       </div>

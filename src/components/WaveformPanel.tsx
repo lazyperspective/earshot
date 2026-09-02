@@ -79,7 +79,8 @@ export function WaveformPanel() {
   const selRegionRef = useRef<Region | null>(null);
   const markerRegions = useRef(new Map<string, Region>());
   const urlRef = useRef<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const [readyTick, setReadyTick] = useState(0);
+  const ready = readyTick > 0;
   const [tooltip, setTooltip] = useState<{ x: number; y: number; marker: Marker } | null>(null);
   const mouse = useRef({ x: 0, y: 0 });
 
@@ -143,7 +144,7 @@ export function WaveformPanel() {
     player.attach(ws);
 
     const st = useStore.getState;
-    ws.on('ready', () => { setReady(true); applyZoom(); });
+    ws.on('ready', () => { setReadyTick((t) => t + 1); applyZoom(); });
     ws.on('timeupdate', (t) => {
       const s = st();
       s.setPlayhead(t);
@@ -198,7 +199,6 @@ export function WaveformPanel() {
     const regions = regionsRef.current;
     if (!ws || !regions || !workingBuffer) return;
     const prevTime = ws.getCurrentTime();
-    setReady(false);
     regions.clearRegions();
     markerRegions.current.clear();
     selRegionRef.current = null;
@@ -228,7 +228,7 @@ export function WaveformPanel() {
     if (cur && Math.abs(cur.start - selection.start) < 1e-4 && Math.abs(cur.end - selection.end) < 1e-4) return;
     if (cur) cur.setOptions({ start: selection.start, end: selection.end });
     else regions.addRegion({ id: SEL_ID, start: selection.start, end: selection.end, color: 'rgba(245,185,66,0.14)', drag: true, resize: true });
-  }, [selection, ready]);
+  }, [selection, readyTick]);
 
   // ---- markers: store -> regions ----
   useEffect(() => {
@@ -256,14 +256,14 @@ export function WaveformPanel() {
     for (const [id, r] of markerRegions.current) {
       if (!seen.has(id)) { r.remove(); markerRegions.current.delete(id); }
     }
-  }, [markers, edl, ready, focusedMarkerId]);
+  }, [markers, edl, readyTick, focusedMarkerId]);
 
   // ---- scroll focused marker into view ----
   useEffect(() => {
     if (!focusedMarkerId || !ready) return;
     const r = markerRegions.current.get(`p:${focusedMarkerId}`);
     if (r) player.scrollTo(Math.max(0, r.start - 1));
-  }, [focusedMarkerId, ready]);
+  }, [focusedMarkerId, readyTick]);
 
   return (
     <div

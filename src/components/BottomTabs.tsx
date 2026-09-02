@@ -2,6 +2,7 @@ import { useStore } from '../store/useStore';
 import type { BottomTab } from '../types';
 import { ActivityFeed } from './ActivityFeed';
 import { ToolConsole } from './ToolConsole';
+import { TranscriptPanel } from './TranscriptPanel';
 
 const TABS: { id: BottomTab; label: string }[] = [
   { id: 'transcript', label: 'Transcript' },
@@ -27,14 +28,10 @@ export function BottomTabs() {
         ))}
       </div>
       <div className="flex-1 min-h-0 overflow-hidden">
-        {tab === 'transcript' && <Placeholder text="Transcript will appear here once audio is loaded." />}
+        {tab === 'transcript' && <TranscriptPanel />}
         {tab === 'activity' && <ActivityFeed />}
         {tab === 'console' && <ToolConsole />}
       </div>
     </section>
   );
-}
-
-function Placeholder({ text }: { text: string }) {
-  return <div className="h-full flex items-center justify-center text-[13px] text-fg-4">{text}</div>;
 }
