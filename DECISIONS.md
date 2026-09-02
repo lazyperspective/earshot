@@ -21,3 +21,15 @@ Running log of product and engineering decisions made while building Earshot. Ne
 - **History snapshots include markers** (not just the EDL) so undoing an "apply" also returns proposals to *approved*.
 - **Region styling is inline.** wavesurfer renders regions inside a shadow root and only exposes `part="region <id>"`, so proposal/selection styling and the mount animation (Web Animations API) are applied directly to `region.element`.
 - **Demo clip** is generated locally with macOS `say` (two voices, deliberate "um"/"uh"/"like", a 2.8s dead-air pause, and a guest at −11 dB) and encoded to MP3 with ffmpeg. 80s, mono, 1.1 MB.
+
+## Phase 3 — Analysis, tool catalog, console
+
+- **Analysis is pure + worker-wrapped.** `src/audio/analysis.ts` has no DOM/Web Audio dependencies so it runs in Vitest and in `analysis.worker.ts`. `analyze.ts` copies channel data before transferring it so the AudioBuffer is never detached, and falls back to inline execution if Workers are unavailable.
+- **Loudness is labelled dBFS RMS**, never LUFS (no K-weighting). `dynamic_range_db` = p95 − p10 of 1s-window RMS over windows above −60 dBFS.
+- **Normalize is a gain op** with a −0.1 dBFS peak ceiling (`limited_by_peak` tells the agent when the target could not be reached without clipping).
+- **One tool catalog, two consumers.** `src/webmcp/tools.ts` defines every tool once (name, LLM-facing description, JSON Schema, annotations, `execute`, `summarize`). The Tool Console and the WebMCP registration both call `invokeTool()`, which validates required args, catches errors into `{ error }`, times the call and writes the Activity feed. UI buttons and tools share the same store actions.
+- **Filler heuristics.** "um/uh"-type disfluencies are always high confidence. "like", "so", "you know" are only flagged when set off by punctuation (how Whisper renders spoken fillers), with a `context` string so the agent can judge.
+- **Transcript tools wait ≤ 25 s** for a transcript, then return `{ status: "transcribing", progress }` so an agent never hangs on a long file.
+- **Transcription uploads 16 kHz mono WAV chunks ≤ 120 s** split at the quietest window near the boundary; each chunk stays under Vercel's 4.5 MB body limit and results are merged with offsets. Whisper is prompted with filler words so it keeps "um"/"uh".
+- **Bundled demo transcript.** No local Whisper was available, so the demo clip is synthesized phrase-by-phrase and `public/demo-transcript.json` (hash-keyed) carries phrase-accurate word timings. It is used only when the loaded file's SHA-256 matches; a "Re-transcribe" action bypasses every cache.
+- **Local dev API.** A tiny Vite middleware serves `/api/transcribe` from the same `api/_lib/transcribe-core.ts` the Vercel function uses, reading `OPENAI_API_KEY` from `.env`.

@@ -1,0 +1,1118 @@
+{
+ "hash": "aa93c1448400fa0bbce58d82af4d3f71e1cb797abcacc9241413938dce27a6df",
+ "language": "en",
+ "text": "Welcome back to Signal and Noise, the show about building things that listen. I'm your host, and, um, today we're talking about editing podcasts with an AI agent that can actually hear the audio. So, um, the big idea is pretty simple. You load a recording into the browser, and the agent gets a set of tools. It can detect silences, measure loudness, read the transcript, and, uh, propose cuts. Sorry, I lost my place there for a second. Anyway. The important part is that the agent never edits anything on its own. It proposes, and you approve with your ears. Yeah, and I think, um, that's what makes it feel safe, you know? Like, I've used tools that just, uh, delete every pause automatically, and it sounds robotic. Here the pauses are, like, suggestions on the timeline. You listen, you keep the ones that matter, and, um, you throw out the rest. Exactly. And, um, because it's all standard web tools, any agent that speaks WebMCP can use them. So that's the demo. Find the filler words, find the long pauses, propose the cuts, and, uh, level the quiet guest. Thanks for listening, and we'll see you next week.",
+ "words": [
+  {
+   "text": "Welcome",
+   "start": 0.005,
+   "end": 0.435
+  },
+  {
+   "text": "back",
+   "start": 0.435,
+   "end": 0.713
+  },
+  {
+   "text": "to",
+   "start": 0.713,
+   "end": 0.89
+  },
+  {
+   "text": "Signal",
+   "start": 0.89,
+   "end": 1.269
+  },
+  {
+   "text": "and",
+   "start": 1.269,
+   "end": 1.496
+  },
+  {
+   "text": "Noise,",
+   "start": 1.496,
+   "end": 1.825
+  },
+  {
+   "text": "the",
+   "start": 1.825,
+   "end": 2.052
+  },
+  {
+   "text": "show",
+   "start": 2.052,
+   "end": 2.33
+  },
+  {
+   "text": "about",
+   "start": 2.33,
+   "end": 2.659
+  },
+  {
+   "text": "building",
+   "start": 2.659,
+   "end": 3.139
+  },
+  {
+   "text": "things",
+   "start": 3.139,
+   "end": 3.518
+  },
+  {
+   "text": "that",
+   "start": 3.518,
+   "end": 3.796
+  },
+  {
+   "text": "listen.",
+   "start": 3.796,
+   "end": 4.176
+  },
+  {
+   "text": "I'm",
+   "start": 4.325,
+   "end": 4.586
+  },
+  {
+   "text": "your",
+   "start": 4.586,
+   "end": 4.904
+  },
+  {
+   "text": "host,",
+   "start": 4.904,
+   "end": 5.222
+  },
+  {
+   "text": "and,",
+   "start": 5.222,
+   "end": 5.483
+  },
+  {
+   "text": "um,",
+   "start": 5.483,
+   "end": 5.686
+  },
+  {
+   "text": "today",
+   "start": 5.686,
+   "end": 6.062
+  },
+  {
+   "text": "we're",
+   "start": 6.062,
+   "end": 6.438
+  },
+  {
+   "text": "talking",
+   "start": 6.438,
+   "end": 6.931
+  },
+  {
+   "text": "about",
+   "start": 6.931,
+   "end": 7.307
+  },
+  {
+   "text": "editing",
+   "start": 7.307,
+   "end": 7.799
+  },
+  {
+   "text": "podcasts",
+   "start": 7.799,
+   "end": 8.349
+  },
+  {
+   "text": "with",
+   "start": 8.349,
+   "end": 8.668
+  },
+  {
+   "text": "an",
+   "start": 8.668,
+   "end": 8.87
+  },
+  {
+   "text": "AI",
+   "start": 8.87,
+   "end": 9.073
+  },
+  {
+   "text": "agent",
+   "start": 9.073,
+   "end": 9.449
+  },
+  {
+   "text": "that",
+   "start": 9.449,
+   "end": 9.768
+  },
+  {
+   "text": "can",
+   "start": 9.768,
+   "end": 10.028
+  },
+  {
+   "text": "actually",
+   "start": 10.028,
+   "end": 10.578
+  },
+  {
+   "text": "hear",
+   "start": 10.578,
+   "end": 10.897
+  },
+  {
+   "text": "the",
+   "start": 10.897,
+   "end": 11.157
+  },
+  {
+   "text": "audio.",
+   "start": 11.157,
+   "end": 11.534
+  },
+  {
+   "text": "So,",
+   "start": 12.591,
+   "end": 12.848
+  },
+  {
+   "text": "um,",
+   "start": 12.848,
+   "end": 13.105
+  },
+  {
+   "text": "the",
+   "start": 13.105,
+   "end": 13.436
+  },
+  {
+   "text": "big",
+   "start": 13.436,
+   "end": 13.767
+  },
+  {
+   "text": "idea",
+   "start": 13.767,
+   "end": 14.171
+  },
+  {
+   "text": "is",
+   "start": 14.171,
+   "end": 14.428
+  },
+  {
+   "text": "pretty",
+   "start": 14.428,
+   "end": 14.979
+  },
+  {
+   "text": "simple.",
+   "start": 14.979,
+   "end": 15.53
+  },
+  {
+   "text": "You",
+   "start": 15.678,
+   "end": 15.91
+  },
+  {
+   "text": "load",
+   "start": 15.91,
+   "end": 16.195
+  },
+  {
+   "text": "a",
+   "start": 16.195,
+   "end": 16.324
+  },
+  {
+   "text": "recording",
+   "start": 16.324,
+   "end": 16.867
+  },
+  {
+   "text": "into",
+   "start": 16.867,
+   "end": 17.151
+  },
+  {
+   "text": "the",
+   "start": 17.151,
+   "end": 17.384
+  },
+  {
+   "text": "browser,",
+   "start": 17.384,
+   "end": 17.823
+  },
+  {
+   "text": "and",
+   "start": 17.823,
+   "end": 18.056
+  },
+  {
+   "text": "the",
+   "start": 18.056,
+   "end": 18.289
+  },
+  {
+   "text": "agent",
+   "start": 18.289,
+   "end": 18.625
+  },
+  {
+   "text": "gets",
+   "start": 18.625,
+   "end": 18.909
+  },
+  {
+   "text": "a",
+   "start": 18.909,
+   "end": 19.039
+  },
+  {
+   "text": "set",
+   "start": 19.039,
+   "end": 19.271
+  },
+  {
+   "text": "of",
+   "start": 19.271,
+   "end": 19.452
+  },
+  {
+   "text": "tools.",
+   "start": 19.452,
+   "end": 19.788
+  },
+  {
+   "text": "It",
+   "start": 19.938,
+   "end": 20.2
+  },
+  {
+   "text": "can",
+   "start": 20.2,
+   "end": 20.536
+  },
+  {
+   "text": "detect",
+   "start": 20.536,
+   "end": 21.097
+  },
+  {
+   "text": "silences,",
+   "start": 21.097,
+   "end": 21.807
+  },
+  {
+   "text": "measure",
+   "start": 21.807,
+   "end": 22.442
+  },
+  {
+   "text": "loudness,",
+   "start": 22.442,
+   "end": 23.152
+  },
+  {
+   "text": "read",
+   "start": 23.152,
+   "end": 23.564
+  },
+  {
+   "text": "the",
+   "start": 23.564,
+   "end": 23.9
+  },
+  {
+   "text": "transcript,",
+   "start": 23.9,
+   "end": 24.759
+  },
+  {
+   "text": "and,",
+   "start": 24.759,
+   "end": 25.096
+  },
+  {
+   "text": "uh,",
+   "start": 25.096,
+   "end": 25.357
+  },
+  {
+   "text": "propose",
+   "start": 25.357,
+   "end": 25.993
+  },
+  {
+   "text": "cuts.",
+   "start": 25.993,
+   "end": 26.404
+  },
+  {
+   "text": "Sorry,",
+   "start": 29.362,
+   "end": 29.761
+  },
+  {
+   "text": "I",
+   "start": 29.761,
+   "end": 29.915
+  },
+  {
+   "text": "lost",
+   "start": 29.915,
+   "end": 30.253
+  },
+  {
+   "text": "my",
+   "start": 30.253,
+   "end": 30.469
+  },
+  {
+   "text": "place",
+   "start": 30.469,
+   "end": 30.869
+  },
+  {
+   "text": "there",
+   "start": 30.869,
+   "end": 31.268
+  },
+  {
+   "text": "for",
+   "start": 31.268,
+   "end": 31.545
+  },
+  {
+   "text": "a",
+   "start": 31.545,
+   "end": 31.699
+  },
+  {
+   "text": "second.",
+   "start": 31.699,
+   "end": 32.16
+  },
+  {
+   "text": "Anyway.",
+   "start": 32.805,
+   "end": 33.379
+  },
+  {
+   "text": "The",
+   "start": 33.526,
+   "end": 33.74
+  },
+  {
+   "text": "important",
+   "start": 33.74,
+   "end": 34.241
+  },
+  {
+   "text": "part",
+   "start": 34.241,
+   "end": 34.504
+  },
+  {
+   "text": "is",
+   "start": 34.504,
+   "end": 34.671
+  },
+  {
+   "text": "that",
+   "start": 34.671,
+   "end": 34.933
+  },
+  {
+   "text": "the",
+   "start": 34.933,
+   "end": 35.148
+  },
+  {
+   "text": "agent",
+   "start": 35.148,
+   "end": 35.458
+  },
+  {
+   "text": "never",
+   "start": 35.458,
+   "end": 35.768
+  },
+  {
+   "text": "edits",
+   "start": 35.768,
+   "end": 36.078
+  },
+  {
+   "text": "anything",
+   "start": 36.078,
+   "end": 36.531
+  },
+  {
+   "text": "on",
+   "start": 36.531,
+   "end": 36.698
+  },
+  {
+   "text": "its",
+   "start": 36.698,
+   "end": 36.913
+  },
+  {
+   "text": "own.",
+   "start": 36.913,
+   "end": 37.127
+  },
+  {
+   "text": "It",
+   "start": 37.273,
+   "end": 37.472
+  },
+  {
+   "text": "proposes,",
+   "start": 37.472,
+   "end": 38.012
+  },
+  {
+   "text": "and",
+   "start": 38.012,
+   "end": 38.268
+  },
+  {
+   "text": "you",
+   "start": 38.268,
+   "end": 38.524
+  },
+  {
+   "text": "approve",
+   "start": 38.524,
+   "end": 39.008
+  },
+  {
+   "text": "with",
+   "start": 39.008,
+   "end": 39.321
+  },
+  {
+   "text": "your",
+   "start": 39.321,
+   "end": 39.634
+  },
+  {
+   "text": "ears.",
+   "start": 39.634,
+   "end": 39.946
+  },
+  {
+   "text": "Yeah,",
+   "start": 40.661,
+   "end": 41.036
+  },
+  {
+   "text": "and",
+   "start": 41.036,
+   "end": 41.343
+  },
+  {
+   "text": "I",
+   "start": 41.343,
+   "end": 41.514
+  },
+  {
+   "text": "think,",
+   "start": 41.514,
+   "end": 41.958
+  },
+  {
+   "text": "um,",
+   "start": 41.958,
+   "end": 42.197
+  },
+  {
+   "text": "that's",
+   "start": 42.197,
+   "end": 42.709
+  },
+  {
+   "text": "what",
+   "start": 42.709,
+   "end": 43.084
+  },
+  {
+   "text": "makes",
+   "start": 43.084,
+   "end": 43.528
+  },
+  {
+   "text": "it",
+   "start": 43.528,
+   "end": 43.767
+  },
+  {
+   "text": "feel",
+   "start": 43.767,
+   "end": 44.142
+  },
+  {
+   "text": "safe,",
+   "start": 44.142,
+   "end": 44.518
+  },
+  {
+   "text": "you",
+   "start": 44.518,
+   "end": 44.825
+  },
+  {
+   "text": "know?",
+   "start": 44.825,
+   "end": 45.2
+  },
+  {
+   "text": "Like,",
+   "start": 45.348,
+   "end": 45.69
+  },
+  {
+   "text": "I've",
+   "start": 45.69,
+   "end": 46.033
+  },
+  {
+   "text": "used",
+   "start": 46.033,
+   "end": 46.376
+  },
+  {
+   "text": "tools",
+   "start": 46.376,
+   "end": 46.781
+  },
+  {
+   "text": "that",
+   "start": 46.781,
+   "end": 47.124
+  },
+  {
+   "text": "just,",
+   "start": 47.124,
+   "end": 47.467
+  },
+  {
+   "text": "uh,",
+   "start": 47.467,
+   "end": 47.685
+  },
+  {
+   "text": "delete",
+   "start": 47.685,
+   "end": 48.153
+  },
+  {
+   "text": "every",
+   "start": 48.153,
+   "end": 48.558
+  },
+  {
+   "text": "pause",
+   "start": 48.558,
+   "end": 48.964
+  },
+  {
+   "text": "automatically,",
+   "start": 48.964,
+   "end": 49.868
+  },
+  {
+   "text": "and",
+   "start": 49.868,
+   "end": 50.148
+  },
+  {
+   "text": "it",
+   "start": 50.148,
+   "end": 50.366
+  },
+  {
+   "text": "sounds",
+   "start": 50.366,
+   "end": 50.834
+  },
+  {
+   "text": "robotic.",
+   "start": 50.834,
+   "end": 51.364
+  },
+  {
+   "text": "Here",
+   "start": 52.33,
+   "end": 52.655
+  },
+  {
+   "text": "the",
+   "start": 52.655,
+   "end": 52.922
+  },
+  {
+   "text": "pauses",
+   "start": 52.922,
+   "end": 53.366
+  },
+  {
+   "text": "are,",
+   "start": 53.366,
+   "end": 53.632
+  },
+  {
+   "text": "like,",
+   "start": 53.632,
+   "end": 53.957
+  },
+  {
+   "text": "suggestions",
+   "start": 53.957,
+   "end": 54.697
+  },
+  {
+   "text": "on",
+   "start": 54.697,
+   "end": 54.904
+  },
+  {
+   "text": "the",
+   "start": 54.904,
+   "end": 55.17
+  },
+  {
+   "text": "timeline.",
+   "start": 55.17,
+   "end": 55.732
+  },
+  {
+   "text": "You",
+   "start": 55.915,
+   "end": 56.184
+  },
+  {
+   "text": "listen,",
+   "start": 56.184,
+   "end": 56.633
+  },
+  {
+   "text": "you",
+   "start": 56.633,
+   "end": 56.902
+  },
+  {
+   "text": "keep",
+   "start": 56.902,
+   "end": 57.231
+  },
+  {
+   "text": "the",
+   "start": 57.231,
+   "end": 57.5
+  },
+  {
+   "text": "ones",
+   "start": 57.5,
+   "end": 57.829
+  },
+  {
+   "text": "that",
+   "start": 57.829,
+   "end": 58.158
+  },
+  {
+   "text": "matter,",
+   "start": 58.158,
+   "end": 58.606
+  },
+  {
+   "text": "and,",
+   "start": 58.606,
+   "end": 58.875
+  },
+  {
+   "text": "um,",
+   "start": 58.875,
+   "end": 59.084
+  },
+  {
+   "text": "you",
+   "start": 59.084,
+   "end": 59.354
+  },
+  {
+   "text": "throw",
+   "start": 59.354,
+   "end": 59.742
+  },
+  {
+   "text": "out",
+   "start": 59.742,
+   "end": 60.011
+  },
+  {
+   "text": "the",
+   "start": 60.011,
+   "end": 60.28
+  },
+  {
+   "text": "rest.",
+   "start": 60.28,
+   "end": 60.609
+  },
+  {
+   "text": "Exactly.",
+   "start": 61.333,
+   "end": 62.081
+  },
+  {
+   "text": "And,",
+   "start": 62.227,
+   "end": 62.527
+  },
+  {
+   "text": "um,",
+   "start": 62.527,
+   "end": 62.76
+  },
+  {
+   "text": "because",
+   "start": 62.76,
+   "end": 63.325
+  },
+  {
+   "text": "it's",
+   "start": 63.325,
+   "end": 63.692
+  },
+  {
+   "text": "all",
+   "start": 63.692,
+   "end": 63.991
+  },
+  {
+   "text": "standard",
+   "start": 63.991,
+   "end": 64.623
+  },
+  {
+   "text": "web",
+   "start": 64.623,
+   "end": 64.923
+  },
+  {
+   "text": "tools,",
+   "start": 64.923,
+   "end": 65.356
+  },
+  {
+   "text": "any",
+   "start": 65.356,
+   "end": 65.655
+  },
+  {
+   "text": "agent",
+   "start": 65.655,
+   "end": 66.088
+  },
+  {
+   "text": "that",
+   "start": 66.088,
+   "end": 66.454
+  },
+  {
+   "text": "speaks",
+   "start": 66.454,
+   "end": 66.953
+  },
+  {
+   "text": "WebMCP",
+   "start": 66.953,
+   "end": 67.453
+  },
+  {
+   "text": "can",
+   "start": 67.453,
+   "end": 67.752
+  },
+  {
+   "text": "use",
+   "start": 67.752,
+   "end": 68.052
+  },
+  {
+   "text": "them.",
+   "start": 68.052,
+   "end": 68.418
+  },
+  {
+   "text": "So",
+   "start": 69.178,
+   "end": 69.355
+  },
+  {
+   "text": "that's",
+   "start": 69.355,
+   "end": 69.735
+  },
+  {
+   "text": "the",
+   "start": 69.735,
+   "end": 69.962
+  },
+  {
+   "text": "demo.",
+   "start": 69.962,
+   "end": 70.241
+  },
+  {
+   "text": "Find",
+   "start": 70.395,
+   "end": 70.775
+  },
+  {
+   "text": "the",
+   "start": 70.775,
+   "end": 71.086
+  },
+  {
+   "text": "filler",
+   "start": 71.086,
+   "end": 71.604
+  },
+  {
+   "text": "words,",
+   "start": 71.604,
+   "end": 72.054
+  },
+  {
+   "text": "find",
+   "start": 72.054,
+   "end": 72.434
+  },
+  {
+   "text": "the",
+   "start": 72.434,
+   "end": 72.745
+  },
+  {
+   "text": "long",
+   "start": 72.745,
+   "end": 73.125
+  },
+  {
+   "text": "pauses,",
+   "start": 73.125,
+   "end": 73.644
+  },
+  {
+   "text": "propose",
+   "start": 73.644,
+   "end": 74.231
+  },
+  {
+   "text": "the",
+   "start": 74.231,
+   "end": 74.542
+  },
+  {
+   "text": "cuts,",
+   "start": 74.542,
+   "end": 74.922
+  },
+  {
+   "text": "and,",
+   "start": 74.922,
+   "end": 75.234
+  },
+  {
+   "text": "uh,",
+   "start": 75.234,
+   "end": 75.475
+  },
+  {
+   "text": "level",
+   "start": 75.475,
+   "end": 75.925
+  },
+  {
+   "text": "the",
+   "start": 75.925,
+   "end": 76.236
+  },
+  {
+   "text": "quiet",
+   "start": 76.236,
+   "end": 76.685
+  },
+  {
+   "text": "guest.",
+   "start": 76.685,
+   "end": 77.134
+  },
+  {
+   "text": "Thanks",
+   "start": 77.713,
+   "end": 78.117
+  },
+  {
+   "text": "for",
+   "start": 78.117,
+   "end": 78.36
+  },
+  {
+   "text": "listening,",
+   "start": 78.36,
+   "end": 78.927
+  },
+  {
+   "text": "and",
+   "start": 78.927,
+   "end": 79.17
+  },
+  {
+   "text": "we'll",
+   "start": 79.17,
+   "end": 79.521
+  },
+  {
+   "text": "see",
+   "start": 79.521,
+   "end": 79.764
+  },
+  {
+   "text": "you",
+   "start": 79.764,
+   "end": 80.007
+  },
+  {
+   "text": "next",
+   "start": 80.007,
+   "end": 80.304
+  },
+  {
+   "text": "week.",
+   "start": 80.304,
+   "end": 80.601
+  }
+ ],
+ "segments": [
+  {
+   "id": 0,
+   "text": "Welcome back to Signal and Noise, the show about building things that listen.",
+   "start": 0.005,
+   "end": 4.176
+  },
+  {
+   "id": 1,
+   "text": "I'm your host, and, um, today we're talking about editing podcasts with an AI agent that can actually hear the audio.",
+   "start": 4.325,
+   "end": 11.534
+  },
+  {
+   "id": 2,
+   "text": "So, um, the big idea is pretty simple.",
+   "start": 12.591,
+   "end": 15.53
+  },
+  {
+   "id": 3,
+   "text": "You load a recording into the browser, and the agent gets a set of tools.",
+   "start": 15.678,
+   "end": 19.788
+  },
+  {
+   "id": 4,
+   "text": "It can detect silences, measure loudness, read the transcript, and, uh, propose cuts.",
+   "start": 19.938,
+   "end": 26.404
+  },
+  {
+   "id": 5,
+   "text": "Sorry, I lost my place there for a second.",
+   "start": 29.362,
+   "end": 32.16
+  },
+  {
+   "id": 6,
+   "text": "Anyway.",
+   "start": 32.805,
+   "end": 33.379
+  },
+  {
+   "id": 7,
+   "text": "The important part is that the agent never edits anything on its own.",
+   "start": 33.526,
+   "end": 37.127
+  },
+  {
+   "id": 8,
+   "text": "It proposes, and you approve with your ears.",
+   "start": 37.273,
+   "end": 39.946
+  },
+  {
+   "id": 9,
+   "text": "Yeah, and I think, um, that's what makes it feel safe, you know?",
+   "start": 40.661,
+   "end": 45.2
+  },
+  {
+   "id": 10,
+   "text": "Like, I've used tools that just, uh, delete every pause automatically, and it sounds robotic.",
+   "start": 45.348,
+   "end": 51.364
+  },
+  {
+   "id": 11,
+   "text": "Here the pauses are, like, suggestions on the timeline.",
+   "start": 52.33,
+   "end": 55.732
+  },
+  {
+   "id": 12,
+   "text": "You listen, you keep the ones that matter, and, um, you throw out the rest.",
+   "start": 55.915,
+   "end": 60.609
+  },
+  {
+   "id": 13,
+   "text": "Exactly.",
+   "start": 61.333,
+   "end": 62.081
+  },
+  {
+   "id": 14,
+   "text": "And, um, because it's all standard web tools, any agent that speaks WebMCP can use them.",
+   "start": 62.227,
+   "end": 68.418
+  },
+  {
+   "id": 15,
+   "text": "So that's the demo.",
+   "start": 69.178,
+   "end": 70.241
+  },
+  {
+   "id": 16,
+   "text": "Find the filler words, find the long pauses, propose the cuts, and, uh, level the quiet guest.",
+   "start": 70.395,
+   "end": 77.134
+  },
+  {
+   "id": 17,
+   "text": "Thanks for listening, and we'll see you next week.",
+   "start": 77.713,
+   "end": 80.601
+  }
+ ],
+ "source": "bundled demo transcript (phrase-timed TTS)"
+}

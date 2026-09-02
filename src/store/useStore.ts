@@ -32,6 +32,7 @@ export interface ApplyResult {
 export interface EarshotState {
   fileName: string | null;
   fileHash: string | null;
+  sourceBlob: Blob | null;
   sourceBuffer: AudioBuffer | null;
   workingBuffer: AudioBuffer | null;
   isLoading: boolean;
@@ -127,6 +128,7 @@ export function markerToOp(m: Marker): EditOp | null {
 const initialProject = {
   fileName: null,
   fileHash: null,
+  sourceBlob: null,
   sourceBuffer: null,
   workingBuffer: null,
   isLoading: false,
@@ -165,6 +167,7 @@ export const useStore = create<EarshotState>()((set, get) => ({
         ...initialProject,
         fileName: file.name,
         fileHash: hash,
+        sourceBlob: file,
         sourceBuffer: buffer,
         workingBuffer: buffer,
         isLoading: false,

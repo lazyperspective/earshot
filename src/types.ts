@@ -64,7 +64,7 @@ export interface Transcript {
 
 export type TranscriptState =
   | { status: 'idle' }
-  | { status: 'transcribing'; startedAt: number }
+  | { status: 'transcribing'; startedAt: number; progress: number; note?: string }
   | { status: 'ready'; transcript: Transcript; cached: boolean }
   | { status: 'error'; message: string };
 
