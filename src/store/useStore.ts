@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type {
   ActivityEntry, Author, BottomTab, EDL, EditOp, Marker, MarkerEdit, MarkerKind, MarkerStatus,
   Selection, TranscriptState, WebMCPStatus, TranscriptionSettings, LocalWhisperState, TranscriptionEngine, LocalModelKey,
-  ReviewState, Preferences, ConfirmRequest,
+  ReviewState, Preferences, ConfirmRequest, Findings, FindingKind,
 } from '../types';
 import { decodeAudio } from '../audio/decode';
 import { renderEdl } from '../audio/render';
@@ -59,6 +59,7 @@ export interface EarshotState {
   review: ReviewState;
   confirm: ConfirmRequest | null;
   showRemovedWords: boolean;
+  findings: Findings;
 
   selection: Selection | null;
   playhead: number;
@@ -103,6 +104,12 @@ export interface EarshotState {
   setPreferences: (patch: Partial<Preferences>) => void;
   setConfirm: (req: ConfirmRequest | null) => void;
   toggleShowRemoved: () => void;
+  /** Record an analysis result (WORKING-time ranges) so it stays visible on the waveform. */
+  setFinding: (kind: FindingKind, ranges: { start: number; end: number }[], label: string) => void;
+  setFindingCurve: (points: { t: number; db: number }[], label: string) => void;
+  setFindingWords: (ids: number[], kind: 'match' | 'filler') => void;
+  toggleFinding: (kind: FindingKind) => void;
+  clearFindings: () => void;
 
   // transport / ui
   setSelection: (sel: Selection | null) => void;
@@ -182,6 +189,7 @@ const initialProject = {
   previewingId: null,
   exportProgress: null,
   lastProposalAt: null,
+  findings: { ranges: {}, hidden: [] } as Findings,
 };
 
 const SETTINGS_KEY = 'earshot.transcription.v1';
@@ -412,6 +420,18 @@ export const useStore = create<EarshotState>()((set, get) => ({
   setPreferences: (patch) => set((s) => { const p = { ...s.preferences, ...patch }; savePreferences(p); return { preferences: p }; }),
   setConfirm: (confirm) => set({ confirm }),
   toggleShowRemoved: () => set((s) => ({ showRemovedWords: !s.showRemovedWords })),
+  setFinding: (kind, ranges, label) => set((s) => {
+    const cuts = getCuts(s);
+    const src = ranges.map((r) => ({ start: workingToSource(r.start, cuts), end: workingToSource(r.end, cuts) })).filter((r) => r.end > r.start);
+    return { findings: { ...s.findings, ranges: { ...s.findings.ranges, [kind]: { ranges: src, label, at: Date.now() } }, hidden: s.findings.hidden.filter((k) => k !== kind) } };
+  }),
+  setFindingCurve: (points, label) => set((s) => {
+    const cuts = getCuts(s);
+    return { findings: { ...s.findings, curve: { points: points.map((p) => ({ t: workingToSource(p.t, cuts), db: p.db })), label, at: Date.now() } } };
+  }),
+  setFindingWords: (ids, kind) => set((s) => ({ findings: { ...s.findings, words: { ids, kind, at: Date.now() } } })),
+  toggleFinding: (kind) => set((s) => ({ findings: { ...s.findings, hidden: s.findings.hidden.includes(kind) ? s.findings.hidden.filter((k) => k !== kind) : [...s.findings.hidden, kind] } })),
+  clearFindings: () => set((s) => ({ findings: { ranges: {}, hidden: s.findings.hidden } })),
 
   // ---------- transport / ui ----------
   setSelection: (sel) => {

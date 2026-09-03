@@ -112,3 +112,7 @@ Running log of product and engineering decisions made while building Earshot. Ne
 ## Post-submission — Full presence coverage
 
 - **Every one of the 43 tools now has a visible effect** on the waveform, not just a toast: a loudness curve is drawn for `get_loudness_profile`; applied cuts slice; `undo`/`redo` run an amber reverse wash; every EDL re-render fires a teal "commit" wash; exports fire a bright beam; `list_markers`, `request_review` and `wait_for_decisions` pulse the proposals they refer to; `get_review_feedback` and `clear_proposals` flash the rejected ranges in red; `get_status`, `get_selection`, `set_view`, `stop` and `set_preferences` place the AI cursor with a label. Tool results carry the ranges the effects need (`apply_proposals.applied[].start/end`, `clear_proposals.removed_ranges`, `restore_cut.start/end`).
+
+## Post-submission — Persistent findings
+
+- **Analysis results now stay on screen** instead of flashing for a second. `detect_silences`, `find_filler_words`, `compare_speakers`, `detect_clipping`, `find_in_transcript`, `suggest_cuts` and `get_loudness_profile` write into a `findings` store slice; `FindingsLayer` draws them as colored bands + a loudness curve over the waveform, with a top-left "AI FOUND · …" legend whose chips toggle each layer and clear all. Found words get a persistent teal underline in the transcript. Ranges are stored on the source timeline so they track cuts and zoom. This means every "listen and tell me what you hear" prompt leaves a visible result on screen for the video, not just a transient sweep.

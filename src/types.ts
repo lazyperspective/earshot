@@ -63,6 +63,16 @@ export interface Preferences {
   style_notes: string;
 }
 
+export type FindingKind = 'silence' | 'filler' | 'quiet' | 'loud' | 'clip' | 'match';
+export interface FindingSet { ranges: { start: number; end: number }[]; label: string; at: number }
+/** Persistent results of the agent's last analyses. Ranges and curve times are on the SOURCE timeline. */
+export interface Findings {
+  ranges: Partial<Record<FindingKind, FindingSet>>;
+  curve?: { points: { t: number; db: number }[]; label: string; at: number };
+  words?: { ids: number[]; kind: 'match' | 'filler'; at: number };
+  hidden: FindingKind[];
+}
+
 export interface ConfirmRequest {
   id: string;
   title: string;

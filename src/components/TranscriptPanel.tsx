@@ -30,8 +30,8 @@ function isTyping(e: KeyboardEvent): boolean {
   return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable;
 }
 
-const Word = memo(function Word({ w, i, active, selected, fx, onDown, onEnter, onRestore }: {
-  w: WWord; i: number; active: boolean; selected: boolean; fx?: 'hit' | 'cut';
+const Word = memo(function Word({ w, i, active, selected, fx, found, onDown, onEnter, onRestore }: {
+  w: WWord; i: number; active: boolean; selected: boolean; fx?: 'hit' | 'cut'; found?: boolean;
   onDown: (i: number) => void; onEnter: (i: number) => void; onRestore: (opId: string) => void;
 }) {
   if (w.removed) {
@@ -57,6 +57,7 @@ const Word = memo(function Word({ w, i, active, selected, fx, onDown, onEnter, o
         w.filler && !active && 'underline decoration-dotted decoration-amber/70 underline-offset-[3px] text-fg-2',
         fx === 'hit' && 'fx-word-hit',
         fx === 'cut' && 'fx-word-cut',
+        found && !active && 'bg-accent/15 text-fg shadow-[inset_0_-2px_0_0_rgba(46,230,197,0.9)]',
       )}
     >
       {w.text}
@@ -89,6 +90,8 @@ export function TranscriptPanel() {
   const activeRef = useRef<HTMLDivElement>(null);
   const [readSweep, setReadSweep] = useState(0);
   const [wordFx, setWordFx] = useState<Map<number, 'hit' | 'cut'>>(new Map());
+  const foundWords = useStore((s) => s.findings.words);
+  const foundSet = useMemo(() => new Set(foundWords?.ids ?? []), [foundWords]);
 
   const onFxEvent = useCallback((e: FxEvent) => {
     if (e.type !== 'words') return;
@@ -256,7 +259,7 @@ export function TranscriptPanel() {
             return (
               <span key={w.id}>
                 {w.para && <br />}
-                <Word w={w} i={i} active={i === activeIdx} selected={!w.removed && !!selRange && i >= selRange.lo && i <= selRange.hi} fx={wordFx.get(w.id)} onDown={onDown} onEnter={onEnter} onRestore={(op) => void onRestore(op)} />{' '}
+                <Word w={w} i={i} active={i === activeIdx} selected={!w.removed && !!selRange && i >= selRange.lo && i <= selRange.hi} fx={wordFx.get(w.id)} found={foundSet.has(w.id)} onDown={onDown} onEnter={onEnter} onRestore={(op) => void onRestore(op)} />{' '}
               </span>
             );
           })}

@@ -11,6 +11,7 @@ import { player, type ViewRequest } from '../audio/player';
 import { formatTime } from '../lib/format';
 import type { Marker } from '../types';
 import { AgentFxLayer, type FxMap } from './AgentFxLayer';
+import { FindingsLayer } from './FindingsLayer';
 import { makeBarRenderer } from '../audio/renderBars';
 
 const SEL_ID = 'sel';
@@ -385,6 +386,7 @@ export function WaveformPanel() {
     >
       <div ref={containerRef} className="absolute inset-x-0 top-2 px-3" style={{ bottom: MINIMAP_H + 12 }} />
       <div ref={minimapRef} className="absolute inset-x-0 bottom-1 px-3 opacity-90 hover:opacity-100 transition-opacity" style={{ height: MINIMAP_H }} title="Overview — drag the highlighted window to scroll" />
+      <FindingsLayer getMap={getFxMap} />
       <AgentFxLayer getMap={getFxMap} />
 
       {isRendering && (
