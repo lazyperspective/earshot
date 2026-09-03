@@ -27,7 +27,7 @@ export function EmptyState({ onFile, onDemo, loading, error }: {
           drag ? 'border-accent bg-accent/[0.06]' : 'border-line-2',
         )}
       >
-        <div className="flex justify-center mb-5"><Logo size={44} /></div>
+        <div className="flex justify-center mb-5"><Logo size={44} className="logo-breathe" /></div>
         <h1 className="text-[22px] font-semibold tracking-tight">Your agent can hear now.</h1>
         <p className="mt-2 text-[13.5px] text-fg-3 leading-relaxed max-w-[440px] mx-auto">
           Load a recording. Earshot exposes its ears to your AI agent over <span className="text-fg-2">WebMCP</span> —

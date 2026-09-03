@@ -129,7 +129,7 @@ export function ProposalsPanel() {
                       'group relative mx-3 my-1.5 rounded-lg border bg-panel-2 p-3 cursor-pointer transition-all duration-150',
                       m.status === 'approved' ? 'border-accent/40' : m.status === 'rejected' ? 'border-line opacity-70' : m.status === 'applied' ? 'border-line opacity-60' : 'border-line-2',
                       focused && 'ring-1 ring-accent/70 border-accent/60 bg-panel-3 opacity-100',
-                      fresh && 'animate-pulse-once',
+                      fresh && 'animate-pulse-once fx-card-in',
                     )}
                   >
                     {m.status === 'approved' && <span className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full bg-accent" />}

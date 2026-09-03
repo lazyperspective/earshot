@@ -3,6 +3,18 @@ import { Logo } from './Logo';
 import { WebMCPPill } from './WebMCPPill';
 import { useStore } from '../store/useStore';
 import { formatTime } from '../lib/format';
+import { useEffect, useState } from 'react';
+
+/** True while `on`, and for `ms` after it turns off, so very short tool calls still show. */
+function useLinger(on: boolean, ms: number): boolean {
+  const [v, setV] = useState(on);
+  useEffect(() => {
+    if (on) { setV(true); return; }
+    const t = setTimeout(() => setV(false), ms);
+    return () => clearTimeout(t);
+  }, [on, ms]);
+  return v || on;
+}
 
 export function TopBar() {
   const fileName = useStore((s) => s.fileName);
@@ -18,6 +30,8 @@ export function TopBar() {
   const closeProject = useStore((s) => s.closeProject);
   const edlCount = useStore((s) => s.edl.length);
   const logActivity = useStore((s) => s.logActivity);
+  const busy = useStore((s) => s.activeCalls.length > 0);
+  const laser = useLinger(busy, 700);
 
   const onExport = async () => {
     const t0 = performance.now();
@@ -32,7 +46,8 @@ export function TopBar() {
   const trimmed = duration != null && sourceDuration != null && Math.abs(sourceDuration - duration) > 0.005;
 
   return (
-    <header className="h-14 shrink-0 flex items-center gap-4 px-4 border-b border-line bg-panel/80 backdrop-blur">
+    <header className="relative h-14 shrink-0 flex items-center gap-4 px-4 border-b border-line bg-panel/80 backdrop-blur">
+      {laser && <span className="fx-laser" aria-hidden="true" />}
       <div className="flex items-center gap-2.5 min-w-[220px]">
         <Logo />
         <div className="leading-tight">

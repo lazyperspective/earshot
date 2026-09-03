@@ -9,6 +9,7 @@ import { audioBufferToWav } from '../audio/wav';
 import { player } from '../audio/player';
 import { formatTime } from '../lib/format';
 import type { Marker } from '../types';
+import { AgentFxLayer, type FxMap } from './AgentFxLayer';
 
 const SEL_ID = 'sel';
 const TIMELINE_H = 22;
@@ -93,6 +94,18 @@ export function WaveformPanel() {
   const markers = useStore((s) => s.markers);
   const edl = useStore((s) => s.edl);
   const focusedMarkerId = useStore((s) => s.focusedMarkerId);
+
+  const getFxMap = useCallback((): FxMap | null => {
+    const ws = wsRef.current;
+    const outer = outerRef.current;
+    if (!ws || !outer) return null;
+    const d = ws.getDuration();
+    if (!d) return null;
+    const wr = ws.getWrapper().getBoundingClientRect();
+    const or = outer.getBoundingClientRect();
+    if (!wr.width) return null;
+    return { x0: wr.left - or.left, pps: wr.width / d, top: wr.top - or.top, height: wr.height, width: or.width };
+  }, []);
 
   const applyZoom = useCallback(() => {
     const ws = wsRef.current;
@@ -284,6 +297,7 @@ export function WaveformPanel() {
       }}
     >
       <div ref={containerRef} className="absolute inset-x-0 top-2 bottom-2 px-3" />
+      <AgentFxLayer getMap={getFxMap} />
 
       {isRendering && (
         <div className="absolute top-3 right-4 z-10 flex items-center gap-2 h-7 px-2.5 rounded-full glass border border-line-2 text-[11px] text-fg-2 animate-fade-up">

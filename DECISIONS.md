@@ -89,3 +89,9 @@ Running log of product and engineering decisions made while building Earshot. Ne
 - **Review handshake**: `request_review` flips the panel into Review mode (auto-preview, A/R, 1–4 reasons), `wait_for_decisions` subscribes to the store and resolves when the scoped proposals are settled, counting only decisions stamped after the review started. `get_review_feedback` aggregates rejections by kind and by word so the agent adapts.
 - **Force-apply is gated**: `apply_proposals { force: true }` shows an Allow/Deny dialog and returns `denied` if the human refuses or does not answer in 60 s.
 - **Preferences** (keep_fillers, max_pause_s, filler_confidence, style_notes) live in localStorage and are echoed by `get_status` so a new session's agent starts with the human's taste.
+
+## Post-submission — Agent presence layer
+
+- **Every tool call is visible motion.** `invokeTool` emits `tool-start` / `tool-end` and, from the result, "where the agent looked / what it touched" events on a tiny pub/sub bus (`src/lib/fx.ts`). No store churn: the animation layers subscribe directly.
+- **Vocabulary**: a teal scanline sweeps the waveform while a read tool runs (amber for writes); found ranges flash where the agent looked (grey silence, amber fillers, teal matches, red clipping); cuts collapse with a red slice; an "AI · …" cursor flies to the last acted position; the status pill emits sonar rings, shows an equalizer and says *listening* / *editing*; a laser runs under the top bar while any call is active; HUD toasts narrate each call with its result and timing; the transcript sweeps on read and flashes words on hit/cut; new Activity rows and proposal cards slide in.
+- **Minimum visible durations** (1 s sweep, 1.7 s toast) so 5 ms calls still register, and `prefers-reduced-motion` disables all of it.

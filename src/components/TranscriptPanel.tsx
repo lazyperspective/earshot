@@ -8,6 +8,8 @@ import { performTextCuts } from '../webmcp/toolsExtra';
 import { player } from '../audio/player';
 import { cx, formatTime } from '../lib/format';
 import { TranscriptionSettings } from './TranscriptionSettings';
+import { useFx, type FxEvent } from '../lib/fx';
+import { useCallback } from 'react';
 
 interface WWord { id: number; text: string; start: number; end: number; filler: boolean; para: boolean; removed: boolean; opId?: string }
 
@@ -28,8 +30,8 @@ function isTyping(e: KeyboardEvent): boolean {
   return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable;
 }
 
-const Word = memo(function Word({ w, i, active, selected, onDown, onEnter, onRestore }: {
-  w: WWord; i: number; active: boolean; selected: boolean;
+const Word = memo(function Word({ w, i, active, selected, fx, onDown, onEnter, onRestore }: {
+  w: WWord; i: number; active: boolean; selected: boolean; fx?: 'hit' | 'cut';
   onDown: (i: number) => void; onEnter: (i: number) => void; onRestore: (opId: string) => void;
 }) {
   if (w.removed) {
@@ -38,7 +40,7 @@ const Word = memo(function Word({ w, i, active, selected, onDown, onEnter, onRes
         data-i={i}
         onClick={() => w.opId && onRestore(w.opId)}
         title="Removed — click to restore this cut"
-        className="inline-block px-[2px] rounded-[3px] cursor-pointer select-none line-through decoration-danger/60 text-fg-4 hover:text-fg-2 hover:bg-danger/10 transition-colors duration-100"
+        className={cx('inline-block px-[2px] rounded-[3px] cursor-pointer select-none line-through decoration-danger/60 text-fg-4 hover:text-fg-2 hover:bg-danger/10 transition-colors duration-100', fx === 'cut' && 'fx-word-cut')}
       >
         {w.text}
       </span>
@@ -53,6 +55,8 @@ const Word = memo(function Word({ w, i, active, selected, onDown, onEnter, onRes
         'inline-block px-[2px] rounded-[3px] cursor-pointer select-none transition-colors duration-100',
         active ? 'bg-accent text-bg' : selected ? 'bg-amber/25 text-fg' : 'hover:bg-panel-3',
         w.filler && !active && 'underline decoration-dotted decoration-amber/70 underline-offset-[3px] text-fg-2',
+        fx === 'hit' && 'fx-word-hit',
+        fx === 'cut' && 'fx-word-cut',
       )}
     >
       {w.text}
@@ -83,6 +87,18 @@ export function TranscriptPanel() {
   const [showSettings, setShowSettings] = useState(false);
   const dragRef = useRef<{ a: number; b: number } | null>(null);
   const activeRef = useRef<HTMLDivElement>(null);
+  const [readSweep, setReadSweep] = useState(0);
+  const [wordFx, setWordFx] = useState<Map<number, 'hit' | 'cut'>>(new Map());
+
+  const onFxEvent = useCallback((e: FxEvent) => {
+    if (e.type !== 'words') return;
+    if (e.kind === 'read') { setReadSweep(Date.now()); return; }
+    const kind: 'hit' | 'cut' = e.kind === 'cut' ? 'cut' : 'hit';
+    setWordFx((prev) => { const m = new Map(prev); for (const id of e.ids) m.set(id, kind); return m; });
+    const ids = e.ids;
+    setTimeout(() => setWordFx((prev) => { const m = new Map(prev); for (const id of ids) m.delete(id); return m; }), kind === 'cut' ? 1000 : 1700);
+  }, []);
+  useFx(onFxEvent);
 
   const { words, visible } = useMemo(() => {
     if (transcript.status !== 'ready') return { words: [] as WWord[], visible: [] as number[] };
@@ -233,13 +249,14 @@ export function TranscriptPanel() {
           <TranscriptionSettings hasTranscript onDone={() => setShowSettings(false)} />
         </div>
       ) : (
-        <div ref={activeRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-3 text-[14px] leading-[1.9] text-fg">
+        <div ref={activeRef} className="relative flex-1 min-h-0 overflow-y-auto px-5 py-3 text-[14px] leading-[1.9] text-fg">
+          {readSweep > 0 && Date.now() - readSweep < 1300 && <div key={readSweep} className="fx-read-sweep" />}
           {words.map((w, i) => {
             if (w.removed && !showRemoved) return null;
             return (
               <span key={w.id}>
                 {w.para && <br />}
-                <Word w={w} i={i} active={i === activeIdx} selected={!w.removed && !!selRange && i >= selRange.lo && i <= selRange.hi} onDown={onDown} onEnter={onEnter} onRestore={(op) => void onRestore(op)} />{' '}
+                <Word w={w} i={i} active={i === activeIdx} selected={!w.removed && !!selRange && i >= selRange.lo && i <= selRange.hi} fx={wordFx.get(w.id)} onDown={onDown} onEnter={onEnter} onRestore={(op) => void onRestore(op)} />{' '}
               </span>
             );
           })}

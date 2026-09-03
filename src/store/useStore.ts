@@ -71,6 +71,8 @@ export interface EarshotState {
 
   activityLog: ActivityEntry[];
   webmcp: WebMCPStatus;
+  /** Tool calls currently executing (for presence animations). */
+  activeCalls: { id: string; tool: string; access: 'read' | 'write'; source: ActivityEntry['source']; startedAt: number }[];
 
   // file
   loadFile: (file: File) => Promise<void>;
@@ -116,6 +118,8 @@ export interface EarshotState {
   // export / agent
   exportWav: () => Promise<{ fileName: string; bytes: number; duration: number }>;
   logActivity: (entry: Omit<ActivityEntry, 'id' | 'timestamp'>) => void;
+  beginCall: (call: { id: string; tool: string; access: 'read' | 'write'; source: ActivityEntry['source'] }) => void;
+  endCall: (id: string) => void;
   setWebMCP: (patch: Partial<WebMCPStatus>) => void;
 }
 
@@ -210,6 +214,7 @@ export const useStore = create<EarshotState>()((set, get) => ({
   showRemovedWords: true,
   bottomTab: 'transcript',
   activityLog: [],
+  activeCalls: [],
   webmcp: { available: false, native: false, polyfill: false, toolCount: 0, readCount: 0, writeCount: 0, lastCallAt: null },
 
   // ---------- file ----------
@@ -455,6 +460,8 @@ export const useStore = create<EarshotState>()((set, get) => ({
   })),
 
   setWebMCP: (patch) => set((s) => ({ webmcp: { ...s.webmcp, ...patch } })),
+  beginCall: (call) => set((s) => ({ activeCalls: [...s.activeCalls, { ...call, startedAt: Date.now() }].slice(-8) })),
+  endCall: (id) => set((s) => ({ activeCalls: s.activeCalls.filter((c) => c.id !== id) })),
 }));
 
 function tick() { return new Promise((r) => setTimeout(r, 0)); }

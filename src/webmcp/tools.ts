@@ -15,6 +15,7 @@ import type { ActivityEntry, Marker, ToolSpec, Transcript, TranscriptSegment } f
 import type { IdWord } from '../transcript/suggest';
 import { extraToolDefs } from './toolsExtra';
 import { requestConfirm } from '../lib/confirm';
+import { emitFx, fxForToolResult } from '../lib/fx';
 
 type Input = Record<string, unknown>;
 
@@ -676,6 +677,10 @@ export async function invokeTool(name: string, input: unknown, source: ActivityE
   const def = all.find((t) => t.name === name);
   const args: Input = input && typeof input === 'object' && !Array.isArray(input) ? (input as Input) : {};
   const t0 = performance.now();
+  const callId = uid('call');
+  const access: 'read' | 'write' = def?.readOnly === false ? 'write' : 'read';
+  useStore.getState().beginCall({ id: callId, tool: name, access, source });
+  emitFx({ type: 'tool-start', id: callId, tool: name, access, source });
   let result: unknown;
   if (!def) {
     result = { error: `Unknown tool "${name}". Available: ${all.map((t) => t.name).join(', ')}` };
@@ -692,6 +697,9 @@ export async function invokeTool(name: string, input: unknown, source: ActivityE
   const durationMs = Math.round(performance.now() - t0);
   let summary = ok ? 'ok' : String((result as { error: string }).error);
   if (ok && def?.summarize) { try { summary = def.summarize(result, args); } catch { /* keep */ } }
-  useStore.getState().logActivity({ tool: name, args, result, summary, durationMs, ok, source, access: def?.readOnly === false ? 'write' : 'read' });
+  useStore.getState().logActivity({ tool: name, args, result, summary, durationMs, ok, source, access });
+  useStore.getState().endCall(callId);
+  emitFx({ type: 'tool-end', id: callId, tool: name, access, source, ok, durationMs, summary });
+  if (ok) fxForToolResult(name, args, result);
   return result;
 }

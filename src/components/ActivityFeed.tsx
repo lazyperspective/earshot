@@ -31,7 +31,7 @@ export function ActivityFeed() {
         {log.map((e) => {
           const isOpen = !!open[e.id];
           return (
-            <li key={e.id} className="animate-fade-up">
+            <li key={e.id} className={cx(Date.now() - e.timestamp < 1500 ? 'fx-row-in' : '')}>
               <button
                 className="w-full flex items-center gap-3 px-4 h-9 text-left hover:bg-panel-2 transition-colors"
                 onClick={() => setOpen((o) => ({ ...o, [e.id]: !isOpen }))}
