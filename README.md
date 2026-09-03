@@ -30,6 +30,8 @@ agent: get_review_feedback → adapt → apply_proposals → export_audio       
 
 **Text is the timeline.** Every transcript word has a stable id; `cut_text` turns "remove *Sorry, I lost my place*" into an audio cut that absorbs the hesitation before it, keeps the pause after it, and snaps both edges to the quietest moment. Removed words stay visible as strikethrough and can be restored with one click. Humans get the same power: select words, press Backspace.
 
+**You can watch the agent hear.** Every tool call is visible motion: a scanline sweeps the waveform while a read tool runs, the ranges the agent looked at flash in place (silence, fillers, matches, clipping), cuts collapse with a slice, an *AI ·* cursor flies to wherever it acted, the status pill pulses and says *listening* / *editing*, a HUD narrates each call with its result and timing, and the transcript flashes the words it read or cut.
+
 Proposals are markers, not edits. `apply_proposals` only applies markers the human marked *approved* (unless the user explicitly asks the agent to `force`). Everything the agent does streams into the **Activity** panel with arguments, results and timings, and the WebMCP status pill glows on every call.
 
 Implementation notes (current spec, Sept 2026):
