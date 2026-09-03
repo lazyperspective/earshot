@@ -10,6 +10,7 @@ import { cutsFromEdl, sourceRangeToWorking, sourceToWorking, workingToSource, ty
 import { audioBufferToWav } from '../audio/wav';
 import { player } from '../audio/player';
 import { uid } from '../lib/format';
+import { emitFx } from '../lib/fx';
 
 interface Snapshot { edl: EDL; markers: Marker[] }
 
@@ -488,6 +489,7 @@ function rerender(): Promise<void> {
         selection: sel,
         playhead: Math.min(cur.playhead, d),
       });
+      emitFx({ type: 'wash', kind: 'commit' });
     } catch (e) {
       console.error('render failed', e);
       useStore.setState({ isRendering: false });

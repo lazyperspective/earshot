@@ -108,3 +108,7 @@ Running log of product and engineering decisions made while building Earshot. Ne
 
 - **No "demo" surfaces in the product.** The landing has one primary action (Open audio file) with the sample episode as a quiet text link; the Activity tab no longer offers a scripted replay (it stays reachable via `?demo=agent` for screenshots); the status pill says "Agent connected · N tools" or "N agent tools ready" instead of naming the polyfill, and clicking it opens a "Connect an agent" guide; feed and HUD label calls "Agent" rather than "WebMCP"; transcription cards describe outcomes ("Whisper on your GPU · nothing uploaded") rather than plumbing.
 - **The landing explains the loop in three steps** (Open · Ask your agent · Approve) so a first-time visitor understands the product without reading the README.
+
+## Post-submission — Full presence coverage
+
+- **Every one of the 43 tools now has a visible effect** on the waveform, not just a toast: a loudness curve is drawn for `get_loudness_profile`; applied cuts slice; `undo`/`redo` run an amber reverse wash; every EDL re-render fires a teal "commit" wash; exports fire a bright beam; `list_markers`, `request_review` and `wait_for_decisions` pulse the proposals they refer to; `get_review_feedback` and `clear_proposals` flash the rejected ranges in red; `get_status`, `get_selection`, `set_view`, `stop` and `set_preferences` place the AI cursor with a label. Tool results carry the ranges the effects need (`apply_proposals.applied[].start/end`, `clear_proposals.removed_ranges`, `restore_cut.start/end`).

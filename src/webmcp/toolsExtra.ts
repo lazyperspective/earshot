@@ -258,7 +258,8 @@ export function extraToolDefs(): ToolDef[] {
         const id = str(input.id).trim();
         const m = await useStore.getState().restoreCut(id);
         if (!m) throw new ToolError(`No applied cut with id "${id}".`);
-        return { restored: true, id: m.id, text: m.text ?? null, new_duration_s: r3(useStore.getState().workingBuffer?.duration ?? 0) };
+        const w = markerWorkingRange(m, getCuts(useStore.getState()));
+        return { restored: true, id: m.id, text: m.text ?? null, ...(w ? { start: r3(w.start), end: r3(w.end) } : {}), new_duration_s: r3(useStore.getState().workingBuffer?.duration ?? 0) };
       },
       summarize: (r) => `Restored “${(r as { text?: string }).text ?? 'cut'}”`,
     },

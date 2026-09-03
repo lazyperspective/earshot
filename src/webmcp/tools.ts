@@ -518,8 +518,11 @@ export function getToolDefs(): ToolDef[] {
       example: {},
       execute: () => {
         requireAudio();
+        const st = useStore.getState();
+        const cuts = getCuts(st);
+        const removed_ranges = st.markers.filter((m) => m.author === 'agent' && m.status !== 'applied').map((m) => markerWorkingRange(m, cuts)).filter((w): w is { start: number; end: number } => !!w).map((w) => ({ start: r3(w.start), end: r3(w.end) }));
         const removed = useStore.getState().clearProposals();
-        return { removed, remaining: useStore.getState().markers.length };
+        return { removed, remaining: useStore.getState().markers.length, removed_ranges };
       },
       summarize: (r) => `Cleared ${(r as { removed: number }).removed} proposals`,
     },
@@ -552,10 +555,13 @@ export function getToolDefs(): ToolDef[] {
             if (!ok) return { status: 'denied', applied_count: 0, hint: 'The human did not allow force-apply. Ask them to approve proposals on the timeline, or call request_review.' };
           }
         }
+        const before = useStore.getState();
+        const cutsBefore = getCuts(before);
+        const rangeBefore = new Map(before.markers.map((m) => [m.id, markerWorkingRange(m, cutsBefore)]));
         const res = await useStore.getState().applyMarkers(ids, force);
         const s = useStore.getState();
         return {
-          applied: res.applied.map((m) => ({ id: m.id, kind: m.kind, reason: m.note })),
+          applied: res.applied.map((m) => { const w = rangeBefore.get(m.id); return { id: m.id, kind: m.kind, reason: m.note, ...(w ? { start: r3(w.start), end: r3(w.end) } : {}) }; }),
           applied_count: res.applied.length,
           skipped: res.skipped,
           new_duration_s: r3(res.newDuration),

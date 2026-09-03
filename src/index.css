@@ -141,6 +141,10 @@
 .fx-flash { position: absolute; border-radius: 3px; animation: fx-flash 1.6s cubic-bezier(0.25, 1, 0.5, 1) 1 forwards; transform-origin: center; pointer-events: none; }
 .fx-slice { position: absolute; border-radius: 2px; background: rgba(242,109,109,0.35); border-left: 1px solid rgba(242,109,109,0.95); border-right: 1px solid rgba(242,109,109,0.95); animation: fx-slice 0.7s cubic-bezier(0.7, 0, 0.3, 1) 1 forwards; transform-origin: center; }
 .fx-spark { position: absolute; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid rgba(46,230,197,0.9); animation: fx-spark 0.9s cubic-bezier(0.25, 1, 0.5, 1) 1 forwards; }
+.fx-wash { position: absolute; left: 0; width: 34%; pointer-events: none; animation: fx-wash 1.0s cubic-bezier(0.4, 0, 0.2, 1) 1 forwards; will-change: transform; background: linear-gradient(90deg, rgba(46,230,197,0) 0%, rgba(46,230,197,0.22) 50%, rgba(46,230,197,0) 100%); }
+.fx-wash.undo { background: linear-gradient(90deg, rgba(245,185,66,0) 0%, rgba(245,185,66,0.22) 50%, rgba(245,185,66,0) 100%); animation-direction: reverse; }
+.fx-wash.export { background: linear-gradient(90deg, rgba(46,230,197,0) 0%, rgba(155,250,232,0.36) 50%, rgba(46,230,197,0) 100%); animation-duration: 0.8s; }
+@keyframes fx-wash { 0% { transform: translateX(-40%); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateX(var(--fx-w)); opacity: 0; } }
 .fx-cursor { position: absolute; transform: translate(-50%, -50%); transition: left 420ms cubic-bezier(0.25, 1, 0.5, 1), top 420ms cubic-bezier(0.25, 1, 0.5, 1), opacity 300ms ease; pointer-events: none; }
 .fx-cursor .dot { width: 10px; height: 10px; border-radius: 50%; background: #2EE6C5; box-shadow: 0 0 0 3px rgba(46,230,197,0.25), 0 0 16px rgba(46,230,197,0.6); animation: fx-cursor-pop 420ms cubic-bezier(0.25, 1, 0.5, 1) 1; }
 .fx-cursor .tag { position: absolute; left: 12px; top: -8px; white-space: nowrap; font-family: var(--font-mono); font-size: 10px; color: #0B0D10; background: #2EE6C5; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 10px rgba(46,230,197,0.35); }
@@ -162,6 +166,6 @@
 .logo-breathe path:nth-child(2) { animation-delay: 0.2s; } .logo-breathe path:nth-child(3) { animation-delay: 0.4s; } .logo-breathe path:nth-child(4) { animation-delay: 0.6s; } .logo-breathe path:nth-child(5) { animation-delay: 0.8s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .fx-sweep, .fx-flash, .fx-slice, .fx-spark, .fx-ring, .fx-laser, .fx-eq i, .fx-row-in, .fx-card-in, .fx-word-read, .fx-word-hit, .fx-word-cut, .fx-read-sweep, .logo-breathe path, .animate-pulse-once, .animate-glow { animation: none !important; }
+  .fx-sweep, .fx-wash, .fx-flash, .fx-slice, .fx-spark, .fx-ring, .fx-laser, .fx-eq i, .fx-row-in, .fx-card-in, .fx-word-read, .fx-word-hit, .fx-word-cut, .fx-read-sweep, .logo-breathe path, .animate-pulse-once, .animate-glow { animation: none !important; }
   .fx-cursor { transition: none; }
 }
