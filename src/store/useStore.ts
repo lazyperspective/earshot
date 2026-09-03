@@ -42,6 +42,7 @@ export interface EarshotState {
   workingBuffer: AudioBuffer | null;
   isLoading: boolean;
   loadError: string | null;
+  largeFileMode: boolean;
   isRendering: boolean;
   renderVersion: number;
 
@@ -62,7 +63,8 @@ export interface EarshotState {
   playhead: number;
   isPlaying: boolean;
   loopSelection: boolean;
-  zoom: number;
+  /** Waveform zoom in pixels per second; 0 = fit the whole file. */
+  pxPerSec: number;
   focusedMarkerId: string | null;
   previewingId: string | null;
   bottomTab: BottomTab;
@@ -106,7 +108,7 @@ export interface EarshotState {
   setPlayhead: (t: number) => void;
   setPlaying: (b: boolean) => void;
   toggleLoop: () => void;
-  setZoom: (zoom: number) => void;
+  setZoom: (pxPerSec: number) => void;
   setBottomTab: (tab: BottomTab) => void;
   setFocusedMarker: (id: string | null) => void;
   setPreviewing: (id: string | null) => void;
@@ -163,6 +165,7 @@ const initialProject = {
   workingBuffer: null,
   isLoading: false,
   loadError: null,
+  largeFileMode: false,
   isRendering: false,
   edl: [] as EDL,
   history: [] as Snapshot[],
@@ -173,7 +176,7 @@ const initialProject = {
   playhead: 0,
   isPlaying: false,
   loopSelection: false,
-  zoom: 1,
+  pxPerSec: 0,
   focusedMarkerId: null,
   previewingId: null,
   exportProgress: null,
@@ -221,13 +224,14 @@ export const useStore = create<EarshotState>()((set, get) => ({
   loadFile: async (file) => {
     set({ isLoading: true, loadError: null });
     try {
-      const { buffer, hash } = await decodeAudio(file);
+      const { buffer, hash, largeFileMode } = await decodeAudio(file);
       set({
         ...initialProject,
         fileName: file.name,
         fileHash: hash,
         sourceBlob: file,
         sourceBuffer: buffer,
+        largeFileMode,
         workingBuffer: buffer,
         isLoading: false,
         renderVersion: get().renderVersion + 1,
@@ -419,7 +423,7 @@ export const useStore = create<EarshotState>()((set, get) => ({
   setPlayhead: (playhead) => set({ playhead }),
   setPlaying: (isPlaying) => set({ isPlaying }),
   toggleLoop: () => set((s) => ({ loopSelection: !s.loopSelection })),
-  setZoom: (zoom) => set({ zoom: Math.max(1, Math.min(40, zoom)) }),
+  setZoom: (pxPerSec) => set({ pxPerSec: Math.max(0, Math.min(2000, pxPerSec)) }),
   setBottomTab: (bottomTab) => set({ bottomTab }),
   setFocusedMarker: (focusedMarkerId) => set({ focusedMarkerId }),
   setPreviewing: (previewingId) => set({ previewingId }),

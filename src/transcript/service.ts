@@ -8,7 +8,8 @@
 import { useStore } from '../store/useStore';
 import type { Transcript, TranscriptSegment, TranscriptState, TranscriptWord } from '../types';
 import { encodeWav } from '../audio/wav';
-import { windowRms } from '../audio/analysis';
+import { quietestTime, type Envelope } from '../audio/analysis';
+import { envelopeOf } from '../audio/analyze';
 import { LOCAL_MODELS, loadLocalModel, transcribeLocalChunk } from './whisperClient';
 import { wordsToSegments } from './segments';
 
@@ -65,32 +66,37 @@ async function bundledDemo(hash: string): Promise<Transcript | null> {
   } catch { return null; }
 }
 
-async function resampleMono(source: AudioBuffer): Promise<Float32Array> {
-  const length = Math.ceil(source.duration * TARGET_SR);
-  const ctx = new OfflineAudioContext(1, length, TARGET_SR);
+/** Resample one slice of the source to 16 kHz mono (constant memory regardless of file length). */
+async function resampleChunk(source: AudioBuffer, startS: number, endS: number): Promise<Float32Array<ArrayBuffer>> {
+  const sr = source.sampleRate;
+  const a = Math.max(0, Math.floor(startS * sr));
+  const b = Math.min(source.length, Math.ceil(endS * sr));
+  const len = Math.max(1, b - a);
+  const chunk = new AudioBuffer({ numberOfChannels: source.numberOfChannels, length: len, sampleRate: sr });
+  for (let c = 0; c < source.numberOfChannels; c++) {
+    chunk.getChannelData(c).set(source.getChannelData(c).subarray(a, a + len));
+  }
+  const ctx = new OfflineAudioContext(1, Math.max(1, Math.ceil((len * TARGET_SR) / sr)), TARGET_SR);
   const src = ctx.createBufferSource();
-  src.buffer = source;
+  src.buffer = chunk;
   src.connect(ctx.destination);
   src.start(0);
   const out = await ctx.startRendering();
-  return out.getChannelData(0);
+  const data = out.getChannelData(0);
+  const copy = new Float32Array(data.length);
+  copy.set(data);
+  return copy;
 }
 
-/** Split into chunks <= maxS, cutting at the quietest 20 ms window in the last 10 s of each chunk. */
-function chunkPoints(mono: Float32Array, maxS: number): number[] {
-  const total = mono.length / TARGET_SR;
+/** Split into chunks <= maxS, cutting at the quietest moment in the last few seconds of each chunk. */
+function chunkPoints(env: Envelope, maxS: number): number[] {
+  const total = env.duration;
   if (total <= maxS) return [0, total];
-  const win = 0.02;
-  const rms = windowRms(mono, TARGET_SR, win);
   const lookback = Math.min(10, maxS / 3);
   const points = [0];
   let pos = 0;
   while (total - pos > maxS) {
-    const lo = Math.floor((pos + maxS - lookback) / win);
-    const hi = Math.floor((pos + maxS) / win);
-    let best = hi, bestV = Infinity;
-    for (let w = lo; w < hi; w++) if (rms[w] < bestV) { bestV = rms[w]; best = w; }
-    pos = best * win;
+    pos = Math.max(pos + maxS - lookback, quietestTime(env, pos + maxS - lookback, pos + maxS));
     points.push(pos);
   }
   points.push(total);
@@ -99,8 +105,8 @@ function chunkPoints(mono: Float32Array, maxS: number): number[] {
 
 async function transcribeViaApi(source: AudioBuffer, onProgress: Progress): Promise<Transcript> {
   onProgress(0.05, 'Preparing audio');
-  const mono = await resampleMono(source);
-  const points = chunkPoints(mono, API_CHUNK_S);
+  const env = await envelopeOf(source);
+  const points = chunkPoints(env, API_CHUNK_S);
   const n = points.length - 1;
   const words: TranscriptWord[] = [];
   const segments: TranscriptSegment[] = [];
@@ -108,10 +114,10 @@ async function transcribeViaApi(source: AudioBuffer, onProgress: Progress): Prom
   let language: string | undefined;
   let model = 'whisper-1';
   for (let i = 0; i < n; i++) {
-    const a = Math.round(points[i] * TARGET_SR), b = Math.round(points[i + 1] * TARGET_SR);
     const offset = points[i];
     onProgress(0.1 + (0.85 * i) / n, n > 1 ? `Transcribing part ${i + 1} of ${n} via OpenAI` : 'Transcribing via OpenAI');
-    const wav = encodeWav([mono.subarray(a, b)], TARGET_SR);
+    const mono = await resampleChunk(source, points[i], points[i + 1]);
+    const wav = encodeWav([mono], TARGET_SR);
     const res = await fetch('/api/transcribe', {
       method: 'POST',
       headers: { 'content-type': 'audio/wav', 'x-earshot-offset': String(offset) },
@@ -130,7 +136,7 @@ async function transcribeViaApi(source: AudioBuffer, onProgress: Progress): Prom
 
 async function transcribeViaLocal(source: AudioBuffer, onProgress: Progress): Promise<Transcript> {
   onProgress(0.02, 'Preparing audio');
-  const mono = await resampleMono(source);
+  const env = await envelopeOf(source);
   const key = useStore.getState().transcription.model;
   const info = LOCAL_MODELS[key];
   const st = useStore.getState().localWhisper;
@@ -143,20 +149,18 @@ async function transcribeViaLocal(source: AudioBuffer, onProgress: Progress): Pr
     try { await loadLocalModel(key); } finally { unsub(); }
   }
   const device = (useStore.getState().localWhisper.device ?? 'webgpu').toUpperCase();
-  const total = mono.length / TARGET_SR;
-  const points = chunkPoints(mono, LOCAL_CHUNK_S);
+  const total = env.duration;
+  const points = chunkPoints(env, LOCAL_CHUNK_S);
   const n = points.length - 1;
   const words: TranscriptWord[] = [];
   const texts: string[] = [];
   for (let i = 0; i < n; i++) {
-    const a = Math.round(points[i] * TARGET_SR), b = Math.round(points[i + 1] * TARGET_SR);
     const offset = points[i];
     onProgress(0.3 + (0.7 * i) / n, `Transcribing part ${i + 1} of ${n} locally · ${info.label} · ${device}`);
-    const audio = new Float32Array(b - a);
-    audio.set(mono.subarray(a, b));
+    const audio = await resampleChunk(source, points[i], points[i + 1]);
+    const chunkEnd = audio.length / TARGET_SR;
     const r = await transcribeLocalChunk(audio);
     texts.push(r.text.trim());
-    const chunkEnd = (b - a) / TARGET_SR;
     for (const c of r.chunks) {
       const t = c.text.trim();
       if (!t) continue;

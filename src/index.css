@@ -113,6 +113,8 @@
 .ws-wrap ::part(region-content) { font-family: var(--font-mono); font-size: 10px; color: rgba(231, 235, 240, 0.85); padding: 3px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 .ws-wrap ::part(region-handle) { border-color: rgba(231,235,240,0.35); }
 .ws-wrap ::part(timeline) { font-family: var(--font-mono); }
+.ws-wrap ::part(scroll) { scrollbar-width: thin; scrollbar-color: #2A323B transparent; }
+.ws-wrap ::part(scroll):hover { scrollbar-color: #3A4552 transparent; }
 .ws-wrap ::part(timeline-notch) { color: #6B7684; font-size: 10px; }
 .ws-wrap ::part(hover-label) { font-family: var(--font-mono); font-size: 10px; }
 

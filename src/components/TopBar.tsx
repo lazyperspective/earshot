@@ -29,6 +29,7 @@ export function TopBar() {
   const exportProgress = useStore((s) => s.exportProgress);
   const closeProject = useStore((s) => s.closeProject);
   const edlCount = useStore((s) => s.edl.length);
+  const largeFileMode = useStore((s) => s.largeFileMode);
   const logActivity = useStore((s) => s.logActivity);
   const busy = useStore((s) => s.activeCalls.length > 0);
   const laser = useLinger(busy, 700);
@@ -67,6 +68,7 @@ export function TopBar() {
               {trimmed && <span className="text-accent ml-1.5">−{(sourceDuration! - duration!).toFixed(1)}s</span>}
             </span>
             {edlCount > 0 && <span className="chip bg-panel-3 text-fg-3">{edlCount} {edlCount === 1 ? 'edit' : 'edits'}</span>}
+            {largeFileMode && <span className="chip bg-amber/12 text-amber whitespace-nowrap" title="Long recording: decoded as mono 24 kHz (speech quality) to keep memory and rendering fast. Export is mono 24 kHz WAV.">large file</span>}
             <button className="btn btn-icon btn-ghost h-6 w-6 text-fg-3" title="Close file" aria-label="Close file" onClick={closeProject}><X size={13} /></button>
           </>
         ) : (

@@ -66,6 +66,9 @@ export function useKeyboard() {
       if (e.key === 'ArrowLeft') { e.preventDefault(); player.skip(e.shiftKey ? -5 : -1); return; }
       if (e.key === 'ArrowRight') { e.preventDefault(); player.skip(e.shiftKey ? 5 : 1); return; }
       if (e.key.toLowerCase() === 'l') { s.toggleLoop(); return; }
+      if (e.key === '=' || e.key === '+') { e.preventDefault(); player.zoomBy(1.6, s.playhead); return; }
+      if (e.key === '-' || e.key === '_') { e.preventDefault(); player.zoomBy(1 / 1.6, s.playhead); return; }
+      if (e.key === '0') { e.preventDefault(); player.fit(); return; }
       if (e.key.toLowerCase() === 'p' && s.focusedMarkerId) {
         const m = s.markers.find((x) => x.id === s.focusedMarkerId);
         if (m) { if (s.previewingId === m.id) stopPreview(); else void previewMarker(m); }

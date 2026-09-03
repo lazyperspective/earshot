@@ -4,8 +4,7 @@
  * This file is consumed by both the WebMCP registration (registerTools.ts) and the in-app Tool Console.
  */
 import { useStore, getCuts, markerWorkingRange } from '../store/useStore';
-import { analyzeClipping, analyzeLoudness, analyzeSegments, analyzeSilences, monoOf } from '../audio/analyze';
-import { computeNormalizeGain } from '../audio/analysis';
+import { analyzeClipping, analyzeLoudness, analyzeSegments, analyzeSilences, normalizeGainOf } from '../audio/analyze';
 import { sourceToWorking, type Range } from '../audio/edl';
 import { player } from '../audio/player';
 import { ensureTranscript } from '../transcript/service';
@@ -181,6 +180,8 @@ export function getToolDefs(): ToolDef[] {
           can_undo: s.history.length > 0,
           can_redo: s.future.length > 0,
           review_mode: s.review.active,
+          view: player.getView(),
+          large_file_mode: s.largeFileMode,
           preferences: s.preferences,
           timeline_note: 'All times are seconds on the working timeline (after applied cuts).',
           workflow_hint: 'Typical loop: get_transcript(format:"indexed") → suggest_cuts → cut_text (applies) or propose_cut_text (asks the human) → request_review → wait_for_decisions → export_audio. clean_for_release does the whole cleanup in one call.',
@@ -281,6 +282,9 @@ export function getToolDefs(): ToolDef[] {
         properties: {
           threshold_db: { type: 'number', description: 'Silence threshold in dBFS RMS. Default -40. Use -50 for very quiet rooms.' },
           min_duration_s: { type: 'number', description: 'Minimum gap length in seconds to report. Default 0.7.' },
+          start: { type: 'number', description: 'Optional range start in seconds (long files: scan a section at a time).' },
+          end: { type: 'number', description: 'Optional range end in seconds.' },
+          limit: { type: 'number', description: 'Max gaps to return (default 200, longest first when truncated).' },
         },
         required: [],
         additionalProperties: false,
@@ -292,8 +296,11 @@ export function getToolDefs(): ToolDef[] {
         const { buffer } = requireAudio();
         const threshold_db = num(input.threshold_db, -40);
         const min_duration_s = Math.max(0.05, num(input.min_duration_s, 0.7));
-        const silences = await analyzeSilences(buffer, { thresholdDb: threshold_db, minDurationS: min_duration_s });
-        return { count: silences.length, threshold_db, min_duration_s, total_silence_s: r3(silences.reduce((a, x) => a + x.duration, 0)), duration_s: r3(buffer.duration), silences };
+        const all = await analyzeSilences(buffer, { thresholdDb: threshold_db, minDurationS: min_duration_s, start: input.start as number | undefined, end: input.end as number | undefined });
+        const limit = Math.max(1, Math.min(1000, num(input.limit, 200)));
+        const truncated = all.length > limit;
+        const silences = truncated ? [...all].sort((a, b) => b.duration - a.duration).slice(0, limit).sort((a, b) => a.start - b.start) : all;
+        return { count: all.length, returned: silences.length, ...(truncated ? { truncated: true, hint: 'Longest gaps returned; pass start/end to scan a section, or raise limit.' } : {}), threshold_db, min_duration_s, total_silence_s: r3(all.reduce((a, x) => a + x.duration, 0)), duration_s: r3(buffer.duration), silences };
       },
       summarize: (r) => { const x = r as { count: number; min_duration_s: number; total_silence_s: number }; return `${x.count} gaps ≥ ${x.min_duration_s}s · ${x.total_silence_s}s total`; },
     },
@@ -577,7 +584,7 @@ export function getToolDefs(): ToolDef[] {
         const { buffer } = requireAudio();
         const mode = str(input.mode, 'rms') === 'peak' ? 'peak' : 'rms';
         const target_db = num(input.target_db, mode === 'peak' ? -1 : -16);
-        const g = computeNormalizeGain(monoOf(buffer), target_db, mode);
+        const g = await normalizeGainOf(buffer, target_db, mode);
         await useStore.getState().appendOps([{ id: uid('op'), type: 'normalize', targetDb: target_db, gainDb: g.gainDb, mode }]);
         return { mode, target_db, measured_db: g.measuredDb, gain_db: g.gainDb, peak_before_db: g.peakDb, limited_by_peak: g.limitedByPeak, edl_ops: useStore.getState().edl.length };
       },

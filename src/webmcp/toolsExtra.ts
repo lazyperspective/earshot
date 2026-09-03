@@ -10,7 +10,7 @@ import {
 import { wordCutRange, snapRange, type KeepPause } from '../transcript/cuts';
 import { suggestCuts, type CandidateKind, type IdWord } from '../transcript/suggest';
 import { findPhrase } from '../transcript/text';
-import { analyzeSegments, analyzeSilences, monoOf } from '../audio/analyze';
+import { analyzeSegments, analyzeSilences } from '../audio/analyze';
 import { sourceToWorking, workingToSource, type Range } from '../audio/edl';
 import { player } from '../audio/player';
 import { chaptersToYouTube, downloadText, toPlainText, toSrt, toVtt } from '../lib/exports';
@@ -67,7 +67,7 @@ export async function performTextCuts(opts: { items: TextCutItem[]; keepPause?: 
   const t = s.transcript.transcript;
   const cutsBefore = getCuts(s);
   const src = sourceWords(t);
-  const mono = monoOf(s.sourceBuffer!);
+  const mono = s.sourceBuffer!.getChannelData(0);
   const sr = s.sourceBuffer!.sampleRate;
   const prepared = opts.items.map((it) => {
     const raw = wordCutRange(src, it.from, it.to, { keepPause: opts.keepPause ?? 'after' });
@@ -590,9 +590,42 @@ export function extraToolDefs(): ToolDef[] {
         const { duration } = requireAudio();
         const range = requireRange(input, duration);
         player.zoomTo(range.start, range.end);
-        return { ...range, zoom: r1(useStore.getState().zoom) };
+        return { ...range, view: player.getView() };
       },
       summarize: (r) => { const x = r as { start: number; end: number }; return `Zoomed to ${ts(x.start)} → ${ts(x.end)}`; },
+    },
+
+    {
+      name: 'set_view',
+      description: 'Scroll and zoom the waveform for the human. Give seconds_visible (how much time fills the screen) and either start or center in seconds; omit both to keep the playhead centred. seconds_visible 0 or omitted with fit: true shows the whole file. Returns the resulting view. Useful on long recordings before pointing at something.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          start: { type: 'number', description: 'Left edge of the view in seconds.' },
+          center: { type: 'number', description: 'Alternative to start: time to centre on.' },
+          seconds_visible: { type: 'number', description: 'How many seconds should fill the view (e.g. 30, 120, 600).' },
+          fit: { type: 'boolean', description: 'Show the entire file.' },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+      readOnly: false,
+      destructive: false,
+      example: { center: 1830, seconds_visible: 60 },
+      execute: async (input) => {
+        const { duration } = requireAudio();
+        if (input.fit === true) { player.fit(); }
+        else {
+          const sv = typeof input.seconds_visible === 'number' ? Math.max(1, Math.min(duration, input.seconds_visible)) : undefined;
+          let start: number | undefined = typeof input.start === 'number' ? input.start : undefined;
+          if (start == null && typeof input.center === 'number') start = input.center - (sv ?? player.getView().seconds_visible) / 2;
+          if (start != null) start = Math.max(0, Math.min(duration, start));
+          player.setView(start, sv);
+        }
+        await new Promise((r) => setTimeout(r, 60));
+        return { view: player.getView() };
+      },
+      summarize: (r) => { const v = (r as { view: { start: number; end: number; fit: boolean } }).view; return v.fit ? 'View: whole file' : `View ${ts(v.start)} → ${ts(v.end)}`; },
     },
 
     // ---------------------------------------------------------------- OUTPUT

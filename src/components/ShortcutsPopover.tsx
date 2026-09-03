@@ -11,6 +11,7 @@ const ROWS: [string, string][] = [
   ['J / K', 'Next / previous proposal'],
   ['A / R', 'Approve / reject focused proposal'],
   ['P', 'Preview focused proposal'],
+  ['+ / − / 0', 'Zoom in / out / fit (⌘-wheel or pinch on the waveform)'],
   ['⌘Z / ⇧⌘Z', 'Undo / redo'],
 ];
 

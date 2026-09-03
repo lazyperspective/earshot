@@ -55,7 +55,7 @@ describe('loudness + clipping + normalize', () => {
     x.fill(1, 100, 110);
     x.fill(-1, 500, 503);
     x[700] = 1; // single sample: not a run
-    const r = detectClipping([x], 1000, 0.99, 2);
+    const r = detectClipping([x], 1000, 0.99);
     expect(r.regions).toHaveLength(2);
     expect(r.clippedSamples).toBe(13);
     expect(r.regions[0].start).toBeCloseTo(0.1, 3);

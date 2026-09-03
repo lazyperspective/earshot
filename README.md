@@ -7,7 +7,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2EE6C5.svg" /></a>
   <img alt="WebMCP" src="https://img.shields.io/badge/WebMCP-document.modelContext-2EE6C5.svg" />
-  <img alt="Tools" src="https://img.shields.io/badge/tools-42%20%C2%B7%2013%20read%20%C2%B7%2029%20write-0B0D10.svg" />
+  <img alt="Tools" src="https://img.shields.io/badge/tools-43%20%C2%B7%2013%20read%20%C2%B7%2030%20write-0B0D10.svg" />
 </p>
 
 Earshot is a browser-based audio editor for podcasters and voice creators where the AI agent can actually **hear** the recording. Through [WebMCP](https://webmachinelearning.github.io/webmcp/) it exposes the editor's ears — silence detection, loudness, clipping, a word-level transcript — and its hands — cut, gain, fade, filter — as first-class tools on `document.modelContext`. The agent listens, **proposes** edits on the timeline, and the human approves them with their own ears before anything is applied. Every edit is non-destructive, undoable, and exportable as WAV. Built for the OpenAI WebMCP Challenge.
@@ -38,7 +38,7 @@ Implementation notes (current spec, Sept 2026):
 
 - Tools register on **`document.modelContext.registerTool()`**, awaited, in the **top-level document only** (no iframes, no declarative forms).
 - Lifetime is owned by an **`AbortController`** passed as `{ signal }`; it is aborted on unmount and re-created when audio is loaded/closed. No `provideContext`/`clearContext`/`unregisterTool`.
-- Before audio is loaded only **`get_status`** is registered; after load the full set of 42 tools appears.
+- Before audio is loaded only **`get_status`** is registered; after load the full set of 43 tools appears.
 - Every `inputSchema` is a strict JSON Schema object (`additionalProperties: false`, described properties). Read tools carry `readOnlyHint: true`; audio-mutating tools carry `destructiveHint: true`; transcript-derived tools carry `untrustedContentHint: true` (spoken audio can contain prompt-injection text).
 - If `document.modelContext` is absent, [`@mcp-b/webmcp-polyfill`](https://www.npmjs.com/package/@mcp-b/webmcp-polyfill) is initialised so the app degrades gracefully and can be tested in plain Chrome.
 - All tool times are **seconds on the working timeline** (what you hear after applied cuts). Results always include enough to verify (new duration, ids, counts).
@@ -79,7 +79,7 @@ Implementation notes (current spec, Sept 2026):
 | `wait_for_decisions` | read | Blocks until the human has decided (or timeout); returns approvals, rejections with reasons, still-pending. |
 | `get_review_feedback` | read | What the human rejected or restored and why, aggregated, with advice for the next batch. |
 | `set_preferences` | write | Persist filler words to keep, max pause, confidence, style notes; echoed in `get_status`. |
-| `play` / `stop` / `zoom_to` | write | Point the human at something: play a range, stop, zoom the waveform. |
+| `play` / `stop` / `zoom_to` / `set_view` | write | Point the human at something: play a range, stop, zoom to a range, or scroll/zoom the view (`seconds_visible`, `center`, `fit`). |
 | `export_transcript` | write | SRT / VTT / TXT / JSON on the edited timeline. |
 | `add_chapter_marker` / `export_chapters` | write | Chapters on the timeline; YouTube-style timestamps or JSON. |
 
@@ -87,7 +87,7 @@ Implementation notes (current spec, Sept 2026):
 
 1. Open the deployed app in the ChatGPT desktop app's built-in browser (GPT-5.6 Sol or Terra): **https://earshot-beige.vercel.app** (or your own deployment).
 2. Click **Load demo podcast clip** (or drop your own MP3/WAV/M4A).
-3. Click the **Site tools** icon in the address bar — you should see 42 tools with the read/write split.
+3. Click the **Site tools** icon in the address bar — you should see 43 tools with the read/write split.
 4. Send:
 
 > Listen to this recording, find the filler words and long pauses, propose cuts, and level the quiet parts.
