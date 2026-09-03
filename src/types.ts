@@ -17,7 +17,7 @@ export type EditOpType = EditOp['type'];
 /** All op times in the EDL are on the SOURCE timeline (never mutated). */
 export type EDL = EditOp[];
 
-export type MarkerKind = 'cut' | 'gain' | 'fade' | 'filter' | 'comment';
+export type MarkerKind = 'cut' | 'gain' | 'fade' | 'filter' | 'comment' | 'chapter';
 export type MarkerStatus = 'pending' | 'approved' | 'rejected' | 'applied';
 export type Author = 'agent' | 'human';
 
@@ -40,6 +40,34 @@ export interface Marker {
   createdAt: number;
   edit?: MarkerEdit;
   appliedOpId?: string;
+  /** For text-addressed cuts: the removed words and their stable ids. */
+  text?: string;
+  wordRange?: { from: number; to: number };
+  /** Human feedback on a rejected or restored proposal. */
+  feedback?: { reason?: string; restored?: boolean; at: number };
+  /** When the status last changed to approved/rejected. */
+  decidedAt?: number;
+}
+
+export interface ReviewState {
+  active: boolean;
+  ids: string[] | null;
+  message: string | null;
+  startedAt: number | null;
+}
+
+export interface Preferences {
+  keep_fillers: string[];
+  max_pause_s: number;
+  filler_confidence: 'high' | 'medium';
+  style_notes: string;
+}
+
+export interface ConfirmRequest {
+  id: string;
+  title: string;
+  detail: string;
+  createdAt: number;
 }
 
 export interface TranscriptWord {

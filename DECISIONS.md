@@ -79,3 +79,13 @@ Running log of product and engineering decisions made while building Earshot. Ne
 - **Own chunking at ≤ 28 s** (split at the quietest window) so each call fits Whisper's 30 s context and transformers.js never has to stitch internal chunks; word timestamps are offset and clamped to the audio length (DTW can overshoot the end).
 - **Model files are cached by the browser Cache API** through transformers.js, so a second load is instant; the picker shows download size per device. `optimizeDeps.exclude` keeps Vite from pre-bundling the library, whose ONNX runtime assets resolve via `import.meta.url`.
 - **Measured on an Apple-silicon Mac in Chrome:** Tiny · English downloads in ~8 s and transcribes the 80 s demo in ~6 s on WebGPU; fillers are kept, timings match the bundled transcript within ~0.1 s.
+
+## Post-submission — Text-addressed editing, macros, review handshake
+
+- **Word ids are source indices.** They never change when cuts are applied, so an agent can read `get_transcript(format:"indexed")` once and keep addressing words while it edits. Words inside applied cuts disappear from tool output but stay visible as strikethrough in the UI.
+- **`cut_text` applies immediately** (the user asked for surgical cuts that "directly cut the audio"); `propose_cut_text` and every macro's `mode: "propose"` keep the approval loop for people who want it. Both paths share one function (`performTextCuts`) with the human select-and-Backspace UI.
+- **Cut geometry**: absorb up to 0.4 s of the pause *before* the words (a hesitation belongs to the filler), keep the pause after so the sentence still breathes, leave a 30 ms guard to the neighbouring word, then snap each edge to the quietest 20 ms window within ±25 ms.
+- **Candidates are heuristic and explainable**: fillers via the existing punctuation-aware detector, stutters (adjacent equal words < 1 s apart), false starts (repeated bigram), flubs by phrase list with a strong/weak split, retakes by Jaccard ≥ 0.6 between nearby sentences. `suggest_cuts` reports them with reasons and confidence and never edits.
+- **Review handshake**: `request_review` flips the panel into Review mode (auto-preview, A/R, 1–4 reasons), `wait_for_decisions` subscribes to the store and resolves when the scoped proposals are settled, counting only decisions stamped after the review started. `get_review_feedback` aggregates rejections by kind and by word so the agent adapts.
+- **Force-apply is gated**: `apply_proposals { force: true }` shows an Allow/Deny dialog and returns `denied` if the human refuses or does not answer in 60 s.
+- **Preferences** (keep_fillers, max_pause_s, filler_confidence, style_notes) live in localStorage and are echoed by `get_status` so a new session's agent starts with the human's taste.

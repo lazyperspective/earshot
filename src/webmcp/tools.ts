@@ -11,7 +11,10 @@ import { player } from '../audio/player';
 import { ensureTranscript } from '../transcript/service';
 import { DEFAULT_FILLERS, findFillers, findPhrase } from '../transcript/text';
 import { formatTime, uid } from '../lib/format';
-import type { ActivityEntry, Marker, ToolSpec, Transcript, TranscriptSegment, TranscriptWord } from '../types';
+import type { ActivityEntry, Marker, ToolSpec, Transcript, TranscriptSegment } from '../types';
+import type { IdWord } from '../transcript/suggest';
+import { extraToolDefs } from './toolsExtra';
+import { requestConfirm } from '../lib/confirm';
 
 type Input = Record<string, unknown>;
 
@@ -20,15 +23,15 @@ export interface ToolDef extends ToolSpec {
   summarize?: (result: unknown, input: Input) => string;
 }
 
-class ToolError extends Error {}
+export class ToolError extends Error {}
 
-const r3 = (n: number) => Math.round(n * 1000) / 1000;
-const r1 = (n: number) => Math.round(n * 10) / 10;
-const num = (v: unknown, fallback: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
-const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : fallback);
-const ts = (t: number) => formatTime(t, { ms: true });
+export const r3 = (n: number) => Math.round(n * 1000) / 1000;
+export const r1 = (n: number) => Math.round(n * 10) / 10;
+export const num = (v: unknown, fallback: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
+export const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : fallback);
+export const ts = (t: number) => formatTime(t, { ms: true });
 
-function requireAudio() {
+export function requireAudio() {
   const s = useStore.getState();
   if (!s.workingBuffer || !s.sourceBuffer) {
     throw new ToolError('No audio is loaded. Ask the user to drop a file or click "Load demo podcast clip", then call get_status.');
@@ -36,7 +39,7 @@ function requireAudio() {
   return { s, buffer: s.workingBuffer, duration: s.workingBuffer.duration };
 }
 
-function requireRange(input: Input, duration: number, allowZeroLength = false): Range {
+export function requireRange(input: Input, duration: number, allowZeroLength = false): Range {
   const start = input.start, end = input.end;
   if (typeof start !== 'number' || typeof end !== 'number' || !Number.isFinite(start) || !Number.isFinite(end)) {
     throw new ToolError('"start" and "end" must be numbers (seconds).');
@@ -47,7 +50,7 @@ function requireRange(input: Input, duration: number, allowZeroLength = false): 
   return { start: r3(a), end: r3(b) };
 }
 
-function markerView(m: Marker, cuts: Range[]) {
+export function markerView(m: Marker, cuts: Range[]) {
   const w = markerWorkingRange(m, cuts);
   return {
     id: m.id,
@@ -57,23 +60,33 @@ function markerView(m: Marker, cuts: Range[]) {
     duration_s: w ? r3(w.end - w.start) : 0,
     reason: m.note,
     author: m.author,
-    status: m.kind === 'comment' ? 'note' : m.status,
+    status: m.kind === 'comment' ? 'note' : m.kind === 'chapter' ? 'chapter' : m.status,
     ...(m.edit ? { edit: m.edit } : {}),
+    ...(m.text ? { text: m.text } : {}),
+    ...(m.wordRange ? { from_id: m.wordRange.from, to_id: m.wordRange.to } : {}),
+    ...(m.feedback ? { feedback: { ...(m.feedback.reason ? { reason: m.feedback.reason } : {}), ...(m.feedback.restored ? { restored: true } : {}) } } : {}),
     ...(w ? {} : { hidden: 'lies entirely inside an applied cut' }),
   };
 }
 
-function workingWords(t: Transcript, cuts: Range[]): TranscriptWord[] {
-  const out: TranscriptWord[] = [];
-  for (const w of t.words) {
+/** Visible words on the working timeline, each with its stable source id (index in the source transcript). */
+export function workingWords(t: Transcript, cuts: Range[]): IdWord[] {
+  const out: IdWord[] = [];
+  for (let i = 0; i < t.words.length; i++) {
+    const w = t.words[i];
     const a = sourceToWorking(w.start, cuts), b = sourceToWorking(w.end, cuts);
-    if (b - a < 0.001 && cuts.length) continue;
-    out.push({ text: w.text, start: r3(a), end: r3(b) });
+    if (cuts.length && (b - a < 0.001 || b - a < 0.3 * (w.end - w.start))) continue;
+    out.push({ id: i, text: w.text, start: r3(a), end: r3(b) });
   }
   return out;
 }
 
-function workingSegments(t: Transcript, cuts: Range[]): TranscriptSegment[] {
+/** All source words with ids and SOURCE times (for cutting). */
+export function sourceWords(t: Transcript): IdWord[] {
+  return t.words.map((w, i) => ({ id: i, text: w.text, start: w.start, end: w.end }));
+}
+
+export function workingSegments(t: Transcript, cuts: Range[]): TranscriptSegment[] {
   const out: TranscriptSegment[] = [];
   for (const s of t.segments) {
     const a = sourceToWorking(s.start, cuts), b = sourceToWorking(s.end, cuts);
@@ -84,7 +97,7 @@ function workingSegments(t: Transcript, cuts: Range[]): TranscriptSegment[] {
 }
 
 /** Wait briefly for a transcript; return a "transcribing" payload if it is still running. */
-async function transcriptOrStatus(): Promise<{ transcript: Transcript } | { status: 'transcribing'; progress: number; note?: string } | { error: string }> {
+export async function transcriptOrStatus(): Promise<{ transcript: Transcript } | { status: 'transcribing'; progress: number; note?: string } | { error: string }> {
   const timeout = new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), 25_000));
   const res = await Promise.race([ensureTranscript(), timeout]);
   const st = res === 'timeout' ? useStore.getState().transcript : res;
@@ -94,7 +107,7 @@ async function transcriptOrStatus(): Promise<{ transcript: Transcript } | { stat
   return { status: 'transcribing', progress: 0 };
 }
 
-function proposal(kind: Marker['kind'], input: Input, edit?: Marker['edit'], label?: string) {
+export function proposal(kind: Marker['kind'], input: Input, edit?: Marker['edit'], label?: string) {
   const { duration } = requireAudio();
   const range = requireRange(input, duration);
   const reason = str(input.reason).trim() || `${label ?? kind} proposed by agent`;
@@ -112,7 +125,7 @@ function proposal(kind: Marker['kind'], input: Input, edit?: Marker['edit'], lab
   };
 }
 
-const SCHEMA_RANGE = {
+export const SCHEMA_RANGE = {
   start: { type: 'number', description: 'Start time in seconds on the current working timeline.' },
   end: { type: 'number', description: 'End time in seconds (must be greater than start).' },
 };
@@ -166,7 +179,10 @@ export function getToolDefs(): ToolDef[] {
           is_playing: s.isPlaying,
           can_undo: s.history.length > 0,
           can_redo: s.future.length > 0,
+          review_mode: s.review.active,
+          preferences: s.preferences,
           timeline_note: 'All times are seconds on the working timeline (after applied cuts).',
+          workflow_hint: 'Typical loop: get_transcript(format:"indexed") → suggest_cuts → cut_text (applies) or propose_cut_text (asks the human) → request_review → wait_for_decisions → export_audio. clean_for_release does the whole cleanup in one call.',
         };
       },
       summarize: (r) => { const x = r as { loaded: boolean; duration_s?: number; edl_ops?: number }; return x.loaded ? `${ts(x.duration_s ?? 0)} · ${x.edl_ops} edits` : 'No audio loaded'; },
@@ -192,12 +208,13 @@ export function getToolDefs(): ToolDef[] {
     },
     {
       name: 'get_transcript',
-      description: 'Get the word-level transcript of the working audio, optionally limited to a time range. Returns words as { text, start, end } in seconds, the plain text, and sentence segments. Triggers transcription the first time using the engine the user chose in the Transcript tab (OpenAI Whisper API via the server, or Whisper running locally on WebGPU — the progress note may include a one-time model download); if it is still running you get { status: "transcribing", progress } — call again in a few seconds. Times already account for applied cuts. Read-only.',
+      description: 'Get the word-level transcript of the working audio, optionally limited to a time range. Every word has a stable id: use ids with cut_text / propose_cut_text to make surgical text edits (removing words removes their audio). format "words" (default) returns { id, text, start, end } objects plus plain text and sentence segments; format "indexed" returns a compact string like "[41]Sorry, [42]I [43]lost" that is cheaper to read. Triggers transcription the first time using the engine the user chose in the Transcript tab (OpenAI Whisper API via the server, or Whisper running locally on WebGPU — the progress note may include a one-time model download); if it is still running you get { status: "transcribing", progress } — call again in a few seconds. Times already account for applied cuts. Read-only.',
       inputSchema: {
         type: 'object',
         properties: {
           start: { type: 'number', description: 'Optional range start in seconds. Defaults to 0.' },
           end: { type: 'number', description: 'Optional range end in seconds. Defaults to the end of the audio.' },
+          format: { type: 'string', enum: ['words', 'indexed'], description: '"words" (default): word objects with ids; "indexed": compact "[id]word" text only.' },
         },
         required: [],
         additionalProperties: false,
@@ -205,7 +222,7 @@ export function getToolDefs(): ToolDef[] {
       readOnly: true,
       destructive: false,
       untrusted: true,
-      example: {},
+      example: { format: 'indexed' },
       execute: async (input) => {
         const { s, duration } = requireAudio();
         const res = await transcriptOrStatus();
@@ -214,15 +231,19 @@ export function getToolDefs(): ToolDef[] {
         const a = Math.max(0, num(input.start, 0)), b = Math.min(duration, num(input.end, duration));
         const words = workingWords(res.transcript, cuts).filter((w) => w.end > a && w.start < b);
         const segments = workingSegments(res.transcript, cuts).filter((sg) => sg.end > a && sg.start < b);
-        return {
+        const base = {
           status: 'ready',
           language: res.transcript.language ?? 'en',
+          engine: res.transcript.engine ?? 'unknown',
           range: { start: r3(a), end: r3(b) },
           word_count: words.length,
-          text: words.map((w) => w.text).join(' '),
-          words,
-          segments,
+          removed_word_count: res.transcript.words.length - workingWords(res.transcript, cuts).length,
+          id_hint: 'Word ids are stable across cuts; pass from_id/to_id to cut_text or propose_cut_text.',
         };
+        if (str(input.format, 'words') === 'indexed') {
+          return { ...base, indexed_text: words.map((w) => `[${w.id}]${w.text}`).join(' ') };
+        }
+        return { ...base, text: words.map((w) => w.text).join(' '), words, segments };
       },
       summarize: (r) => { const x = r as { status: string; word_count?: number; progress?: number }; return x.status === 'ready' ? `${x.word_count} words` : `transcribing ${Math.round((x.progress ?? 0) * 100)}%`; },
     },
@@ -246,7 +267,7 @@ export function getToolDefs(): ToolDef[] {
         const res = await transcriptOrStatus();
         if (!('transcript' in res)) return res;
         const words = workingWords(res.transcript, getCuts(s));
-        const matches = findPhrase(words, query).map((m) => ({ text: m.text, start: r3(m.start), end: r3(m.end), context: words.slice(Math.max(0, m.wordIndex - 4), m.wordIndex + m.wordCount + 4).map((w) => w.text).join(' ') }));
+        const matches = findPhrase(words, query).map((m) => ({ text: m.text, from_id: words[m.wordIndex].id, to_id: words[m.wordIndex + m.wordCount - 1].id, start: r3(m.start), end: r3(m.end), context: words.slice(Math.max(0, m.wordIndex - 4), m.wordIndex + m.wordCount + 4).map((w) => w.text).join(' ') }));
         return { query, count: matches.length, matches };
       },
       summarize: (r, i) => { const x = r as { count?: number; status?: string }; return x.count != null ? `${x.count} match${x.count === 1 ? '' : 'es'} for “${str(i.query)}”` : (x.status ?? 'pending'); },
@@ -317,7 +338,7 @@ export function getToolDefs(): ToolDef[] {
     },
     {
       name: 'find_filler_words',
-      description: 'Find filler words ("um", "uh", "like", "you know", "so" by default) in the transcript. Returns [{ word, start, end, confidence, context }] in seconds. "um"/"uh" are high confidence; "like"/"so"/"you know" are only flagged when set off by commas. Typical next step: propose_cut for each high-confidence hit with ~0.03 s padding. Triggers transcription if needed. Read-only.',
+      description: 'Find filler words ("um", "uh", "like", "you know", "so" by default) in the transcript. Returns [{ word, from_id, to_id, start, end, confidence, context }]. "um"/"uh" are high confidence; "like"/"so"/"you know" are only flagged when set off by commas. Typical next step: cut_text (or propose_cut_text) with the from_id/to_id pairs — it handles padding and pause rhythm — or remove_fillers to do it in one call. Triggers transcription if needed. Read-only.',
       inputSchema: {
         type: 'object',
         properties: { words: { type: 'array', items: { type: 'string' }, description: 'Filler words/phrases to look for. Default ["um","uh","like","you know","so"].' } },
@@ -334,7 +355,7 @@ export function getToolDefs(): ToolDef[] {
         if (!('transcript' in res)) return res;
         const list = Array.isArray(input.words) && input.words.length ? (input.words as unknown[]).map((w) => String(w)) : DEFAULT_FILLERS;
         const words = workingWords(res.transcript, getCuts(s));
-        const hits = findFillers(words, list).map(({ wordIndex: _i, ...h }) => h);
+        const hits = findFillers(words, list).map(({ wordIndex, ...h }) => ({ ...h, from_id: words[wordIndex].id, to_id: words[wordIndex + h.word.split(' ').length - 1].id }));
         return { count: hits.length, high_confidence: hits.filter((h) => h.confidence === 'high').length, words_searched: list, fillers: hits };
       },
       summarize: (r) => { const x = r as { count?: number; high_confidence?: number; status?: string }; return x.count != null ? `${x.count} fillers (${x.high_confidence} high confidence)` : (x.status ?? 'pending'); },
@@ -369,7 +390,7 @@ export function getToolDefs(): ToolDef[] {
     },
     {
       name: 'list_markers',
-      description: 'List every marker on the timeline: agent proposals (cut/gain/fade/filter) with status pending | approved | rejected | applied, and plain notes. Times are seconds on the working timeline. Use this to see what the human approved before calling apply_proposals. Read-only.',
+      description: 'List every marker on the timeline: proposals (cut/gain/fade/filter) with status pending | approved | rejected | applied, applied text cuts (with the removed text and word ids), notes and chapters. Rejected items may carry human feedback { reason, restored }. Times are seconds on the working timeline. Read-only.',
       inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
       readOnly: true,
       destructive: false,
@@ -498,7 +519,7 @@ export function getToolDefs(): ToolDef[] {
     // --------------------------------------------------------------- DIRECT
     {
       name: 'apply_proposals',
-      description: 'Apply APPROVED proposals to the edit list and re-render the audio (non-destructive; undo is available). By default only markers the human marked "approved" are applied; pass ids to restrict to specific markers. force: true also applies still-pending proposals — only do that when the user explicitly asked you to. Cuts shift all later times: re-read get_status afterwards. Returns what was applied and skipped, plus the new duration.',
+      description: 'Apply APPROVED proposals to the edit list and re-render the audio (non-destructive; undo is available). By default only markers the human marked "approved" are applied; pass ids to restrict to specific markers. force: true also applies still-pending proposals, but the human is shown an Allow/Deny dialog first and the call returns { status: "denied" } if they refuse — only use it when the user explicitly asked. Cuts shift all later times: re-read get_status afterwards. Returns what was applied and skipped, plus the new duration.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -515,6 +536,14 @@ export function getToolDefs(): ToolDef[] {
         requireAudio();
         const ids = Array.isArray(input.ids) ? (input.ids as unknown[]).map(String) : undefined;
         const force = input.force === true;
+        if (force) {
+          const st = useStore.getState();
+          const pendingTargets = st.markers.filter((m) => m.status === 'pending' && m.kind !== 'comment' && m.kind !== 'chapter' && (!ids || ids.includes(m.id)));
+          if (pendingTargets.length) {
+            const ok = await requestConfirm('Apply without review?', `Your agent wants to apply ${pendingTargets.length} pending proposal${pendingTargets.length === 1 ? '' : 's'} without your approval.`);
+            if (!ok) return { status: 'denied', applied_count: 0, hint: 'The human did not allow force-apply. Ask them to approve proposals on the timeline, or call request_review.' };
+          }
+        }
         const res = await useStore.getState().applyMarkers(ids, force);
         const s = useStore.getState();
         return {
@@ -633,7 +662,7 @@ export function getToolDefs(): ToolDef[] {
       summarize: (r) => { const x = r as { file_name: string; bytes: number }; return `Downloaded ${x.file_name} (${(x.bytes / 1e6).toFixed(1)} MB)`; },
     },
   ];
-  return tools;
+  return [...tools, ...extraToolDefs()];
 }
 
 export function toolCounts(defs: ToolDef[]) {

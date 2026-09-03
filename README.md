@@ -7,7 +7,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2EE6C5.svg" /></a>
   <img alt="WebMCP" src="https://img.shields.io/badge/WebMCP-document.modelContext-2EE6C5.svg" />
-  <img alt="Tools" src="https://img.shields.io/badge/tools-23%20%C2%B7%2010%20read%20%C2%B7%2013%20write-0B0D10.svg" />
+  <img alt="Tools" src="https://img.shields.io/badge/tools-42%20%C2%B7%2014%20read%20%C2%B7%2028%20write-0B0D10.svg" />
 </p>
 
 Earshot is a browser-based audio editor for podcasters and voice creators where the AI agent can actually **hear** the recording. Through [WebMCP](https://webmachinelearning.github.io/webmcp/) it exposes the editor's ears — silence detection, loudness, clipping, a word-level transcript — and its hands — cut, gain, fade, filter — as first-class tools on `document.modelContext`. The agent listens, **proposes** edits on the timeline, and the human approves them with their own ears before anything is applied. Every edit is non-destructive, undoable, and exportable as WAV. Built for the OpenAI WebMCP Challenge.
@@ -21,11 +21,14 @@ Earshot is a browser-based audio editor for podcasters and voice creators where 
 The core idea is a **human-in-the-loop edit protocol** expressed as tools:
 
 ```
-agent: get_status → detect_silences / find_filler_words / compare_speakers   (perception)
-agent: propose_cut ×N, propose_gain, propose_fade                            (safe writes → pending markers)
-human: Preview · Approve · Reject on the timeline                             (ears)
-agent or human: apply_proposals → play → export_audio                        (commit)
+agent: get_status → get_transcript(format:"indexed") → suggest_cuts          (perception, word ids)
+agent: cut_text (surgical, applies) — or propose_cut_text / clean_for_release mode:"propose"
+agent: request_review("I proposed 9 cuts…") → wait_for_decisions            (the handshake)
+human: Review mode auto-plays each proposal · A / R · optional reason         (ears)
+agent: get_review_feedback → adapt → apply_proposals → export_audio          (commit)
 ```
+
+**Text is the timeline.** Every transcript word has a stable id; `cut_text` turns "remove *Sorry, I lost my place*" into an audio cut that absorbs the hesitation before it, keeps the pause after it, and snaps both edges to the quietest moment. Removed words stay visible as strikethrough and can be restored with one click. Humans get the same power: select words, press Backspace.
 
 Proposals are markers, not edits. `apply_proposals` only applies markers the human marked *approved* (unless the user explicitly asks the agent to `force`). Everything the agent does streams into the **Activity** panel with arguments, results and timings, and the WebMCP status pill glows on every call.
 
@@ -33,7 +36,7 @@ Implementation notes (current spec, Sept 2026):
 
 - Tools register on **`document.modelContext.registerTool()`**, awaited, in the **top-level document only** (no iframes, no declarative forms).
 - Lifetime is owned by an **`AbortController`** passed as `{ signal }`; it is aborted on unmount and re-created when audio is loaded/closed. No `provideContext`/`clearContext`/`unregisterTool`.
-- Before audio is loaded only **`get_status`** is registered; after load the full set of 23 tools appears.
+- Before audio is loaded only **`get_status`** is registered; after load the full set of 42 tools appears.
 - Every `inputSchema` is a strict JSON Schema object (`additionalProperties: false`, described properties). Read tools carry `readOnlyHint: true`; audio-mutating tools carry `destructiveHint: true`; transcript-derived tools carry `untrustedContentHint: true` (spoken audio can contain prompt-injection text).
 - If `document.modelContext` is absent, [`@mcp-b/webmcp-polyfill`](https://www.npmjs.com/package/@mcp-b/webmcp-polyfill) is initialised so the app degrades gracefully and can be tested in plain Chrome.
 - All tool times are **seconds on the working timeline** (what you hear after applied cuts). Results always include enough to verify (new duration, ids, counts).
@@ -64,12 +67,25 @@ Implementation notes (current spec, Sept 2026):
 | `seek` | write | Moves the playhead. |
 | `undo` / `redo` | write · destructive | History navigation (EDL + marker statuses). |
 | `export_audio` | write | Renders the EDL and downloads 16-bit PCM WAV; returns name, bytes, duration. |
+| `cut_text` | write · destructive | **Surgical text cuts**: remove words by stable id (`from_id`/`to_id`) or by phrase; absorbs the hesitation before, keeps the pause after, snaps edges to the quietest moment. Applies immediately, one undo step. |
+| `propose_cut_text` | write · proposal | Same addressing, but creates pending markers for the human. |
+| `restore_cut` | write · destructive | Puts one applied cut back without undoing anything else. |
+| `suggest_cuts` | read · untrusted | Candidates with word ids: fillers, stutters, false starts, flubs/asides, repeated takes, plus long pauses. Honours preferences. |
+| `remove_fillers` / `tighten_pauses` / `trim_edges` / `level_speakers` | write · destructive | One-call macros, each with `mode: "apply" \| "propose"`. |
+| `clean_for_release` | write · destructive | The whole cleanup in one call (fillers, flubs, pauses, edges, quiet passages), apply or propose. |
+| `request_review` | write | Opens Review mode with your message: each proposal auto-plays, the human decides with one key. |
+| `wait_for_decisions` | read | Blocks until the human has decided (or timeout); returns approvals, rejections with reasons, still-pending. |
+| `get_review_feedback` | read | What the human rejected or restored and why, aggregated, with advice for the next batch. |
+| `set_preferences` | write | Persist filler words to keep, max pause, confidence, style notes; echoed in `get_status`. |
+| `play` / `stop` / `zoom_to` | write | Point the human at something: play a range, stop, zoom the waveform. |
+| `export_transcript` | write | SRT / VTT / TXT / JSON on the edited timeline. |
+| `add_chapter_marker` / `export_chapters` | write | Chapters on the timeline; YouTube-style timestamps or JSON. |
 
 ## Try it with ChatGPT / Codex
 
 1. Open the deployed app in the ChatGPT desktop app's built-in browser (GPT-5.6 Sol or Terra): **https://earshot-beige.vercel.app** (or your own deployment).
 2. Click **Load demo podcast clip** (or drop your own MP3/WAV/M4A).
-3. Click the **Site tools** icon in the address bar — you should see 23 tools with the read/write split.
+3. Click the **Site tools** icon in the address bar — you should see 42 tools with the read/write split.
 4. Send:
 
 > Listen to this recording, find the filler words and long pauses, propose cuts, and level the quiet parts.

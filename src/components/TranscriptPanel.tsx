@@ -1,29 +1,49 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Loader2, RefreshCw, Settings2, X } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Loader2, RefreshCw, Scissors, Settings2, X } from 'lucide-react';
 import { useStore, getCuts } from '../store/useStore';
 import { sourceToWorking } from '../audio/edl';
 import { ensureTranscript } from '../transcript/service';
 import { isFillerToken } from '../transcript/text';
+import { performTextCuts } from '../webmcp/toolsExtra';
 import { player } from '../audio/player';
 import { cx, formatTime } from '../lib/format';
 import { TranscriptionSettings } from './TranscriptionSettings';
 
-interface WWord { text: string; start: number; end: number; filler: boolean; para: boolean }
+interface WWord { id: number; text: string; start: number; end: number; filler: boolean; para: boolean; removed: boolean; opId?: string }
 
-function indexAt(words: WWord[], t: number): number {
-  let lo = 0, hi = words.length - 1, ans = -1;
+/** Index (into `words`) of the visible word under time t, or -1. */
+function indexAt(words: WWord[], visible: number[], t: number): number {
+  let lo = 0, hi = visible.length - 1, ans = -1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    if (words[mid].start <= t) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+    if (words[visible[mid]].start <= t) { ans = mid; lo = mid + 1; } else hi = mid - 1;
   }
-  if (ans >= 0 && t <= words[ans].end + 0.15) return ans;
+  if (ans >= 0 && t <= words[visible[ans]].end + 0.15) return visible[ans];
   return -1;
 }
 
-const Word = memo(function Word({ w, i, active, selected, onDown, onEnter }: {
+function isTyping(e: KeyboardEvent): boolean {
+  const el = e.target as HTMLElement | null;
+  if (!el) return false;
+  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable;
+}
+
+const Word = memo(function Word({ w, i, active, selected, onDown, onEnter, onRestore }: {
   w: WWord; i: number; active: boolean; selected: boolean;
-  onDown: (i: number) => void; onEnter: (i: number) => void;
+  onDown: (i: number) => void; onEnter: (i: number) => void; onRestore: (opId: string) => void;
 }) {
+  if (w.removed) {
+    return (
+      <span
+        data-i={i}
+        onClick={() => w.opId && onRestore(w.opId)}
+        title="Removed — click to restore this cut"
+        className="inline-block px-[2px] rounded-[3px] cursor-pointer select-none line-through decoration-danger/60 text-fg-4 hover:text-fg-2 hover:bg-danger/10 transition-colors duration-100"
+      >
+        {w.text}
+      </span>
+    );
+  }
   return (
     <span
       data-i={i}
@@ -54,31 +74,42 @@ export function TranscriptPanel() {
   const selection = useStore((s) => s.selection);
   const setSelection = useStore((s) => s.setSelection);
   const hasAudio = useStore((s) => !!s.workingBuffer);
+  const showRemoved = useStore((s) => s.showRemovedWords);
+  const toggleShowRemoved = useStore((s) => s.toggleShowRemoved);
+  const restoreCut = useStore((s) => s.restoreCut);
+  const logActivity = useStore((s) => s.logActivity);
+  const isRendering = useStore((s) => s.isRendering);
   const [drag, setDrag] = useState<{ a: number; b: number } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const dragRef = useRef<{ a: number; b: number } | null>(null);
   const activeRef = useRef<HTMLDivElement>(null);
 
-  const words: WWord[] = useMemo(() => {
-    if (transcript.status !== 'ready') return [];
+  const { words, visible } = useMemo(() => {
+    if (transcript.status !== 'ready') return { words: [] as WWord[], visible: [] as number[] };
     const cuts = getCuts({ edl });
+    const cutOps = edl.filter((op) => op.type === 'cut');
     const t = transcript.transcript;
     const segStarts = new Set(t.segments.map((s) => s.start));
     const out: WWord[] = [];
-    for (const w of t.words) {
+    const vis: number[] = [];
+    for (let i = 0; i < t.words.length; i++) {
+      const w = t.words[i];
       const a = sourceToWorking(w.start, cuts), b = sourceToWorking(w.end, cuts);
-      if (cuts.length && b - a < 0.001) continue;
-      out.push({ text: w.text, start: a, end: b, filler: isFillerToken(w.text), para: segStarts.has(w.start) && out.length > 0 });
+      const removed = cuts.length > 0 && (b - a < 0.001 || b - a < 0.3 * (w.end - w.start));
+      const mid = (w.start + w.end) / 2;
+      const op = removed ? cutOps.find((o) => o.type === 'cut' && mid >= o.start - 1e-3 && mid <= o.end + 1e-3) : undefined;
+      out.push({ id: i, text: w.text, start: a, end: b, filler: isFillerToken(w.text), para: segStarts.has(w.start) && out.length > 0, removed, opId: op?.id });
+      if (!removed) vis.push(out.length - 1);
     }
-    return out;
+    return { words: out, visible: vis };
   }, [transcript, edl]);
 
-  const activeIdx = useStore((s) => indexAt(words, s.playhead));
+  const removedCount = words.length - visible.length;
+  const activeIdx = useStore((s) => indexAt(words, visible, s.playhead));
 
   useEffect(() => {
     if (activeIdx < 0) return;
-    const el = activeRef.current?.querySelector<HTMLElement>(`[data-i="${activeIdx}"]`);
-    el?.scrollIntoView({ block: 'nearest' });
+    activeRef.current?.querySelector<HTMLElement>(`[data-i="${activeIdx}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [activeIdx]);
 
   useEffect(() => {
@@ -102,11 +133,44 @@ export function TranscriptPanel() {
     if (drag) return { lo: Math.min(drag.a, drag.b), hi: Math.max(drag.a, drag.b) };
     if (!selection) return null;
     let lo = -1, hi = -1;
-    for (let i = 0; i < words.length; i++) {
+    for (const i of visible) {
       if (words[i].end > selection.start && words[i].start < selection.end) { if (lo < 0) lo = i; hi = i; }
     }
     return lo >= 0 ? { lo, hi } : null;
-  }, [drag, selection, words]);
+  }, [drag, selection, words, visible]);
+
+  const selectedCount = useMemo(() => (selRange ? visible.filter((i) => i >= selRange.lo && i <= selRange.hi).length : 0), [selRange, visible]);
+
+  const cutSelected = async () => {
+    if (!selRange || selectedCount === 0 || isRendering) return;
+    const from = words[selRange.lo].id, to = words[selRange.hi].id;
+    const text = words.slice(selRange.lo, selRange.hi + 1).filter((w) => !w.removed).map((w) => w.text).join(' ');
+    try {
+      const r = await performTextCuts({ items: [{ from, to, reason: `Cut by you: “${text.length > 60 ? text.slice(0, 57) + '…' : text}”` }], mode: 'apply', author: 'human' });
+      logActivity({ tool: 'cut_text', args: { from_id: from, to_id: to }, result: r, summary: `You cut “${text.length > 50 ? text.slice(0, 47) + '…' : text}” · −${r.removed_s}s`, durationMs: 0, ok: true, source: 'ui', access: 'write' });
+    } catch (e) {
+      logActivity({ tool: 'cut_text', args: { from_id: from, to_id: to }, result: { error: String(e) }, summary: `Cut failed: ${(e as Error).message}`, durationMs: 0, ok: false, source: 'ui', access: 'write' });
+    }
+    setSelection(null);
+  };
+
+  const onRestore = async (opId: string) => {
+    const m = await restoreCut(opId);
+    logActivity({ tool: 'restore_cut', args: { id: opId }, result: { restored: !!m }, summary: `You restored “${m?.text ?? 'cut'}”`, durationMs: 0, ok: true, source: 'ui', access: 'write' });
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isTyping(e)) return;
+      if ((e.key === 'Backspace' || e.key === 'Delete') && selRange && selectedCount > 0 && useStore.getState().bottomTab === 'transcript') {
+        e.preventDefault();
+        void cutSelected();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selRange, selectedCount, words, isRendering]);
 
   if (!hasAudio) return null;
 
@@ -143,16 +207,23 @@ export function TranscriptPanel() {
   const t = transcript.transcript;
   return (
     <div className="h-full flex flex-col">
-      <div className="h-9 shrink-0 flex items-center gap-3 px-4 border-b border-line text-[11.5px] text-fg-3">
-        <span><span className="text-fg-2 font-medium">{words.length}</span> words</span>
-        <span>·</span>
-        <span>{t.language?.toUpperCase() ?? 'AUTO'}</span>
-        <span>·</span>
-        <span className="chip bg-panel-3 text-fg-2 normal-case tracking-normal font-medium">{engineLabel(t.engine, t.model)}</span>
-        <span className="text-fg-4">· click a word to seek, drag to select · <span className="underline decoration-dotted decoration-amber/70">dotted</span> = filler</span>
+      <div className="h-9 shrink-0 flex items-center gap-2.5 px-4 border-b border-line text-[11.5px] text-fg-3">
+        <span className="whitespace-nowrap"><span className="text-fg-2 font-medium">{visible.length}</span> words</span>
+        <span className="chip bg-panel-3 text-fg-2 normal-case tracking-normal font-medium whitespace-nowrap max-w-[220px] truncate">{engineLabel(t.engine, t.model)}</span>
+        {removedCount > 0 && (
+          <button className={cx('btn btn-ghost h-6 px-1.5 text-[11px] whitespace-nowrap', showRemoved ? 'text-fg-2' : 'text-fg-4')} onClick={toggleShowRemoved} title="Show removed words as strikethrough">
+            {showRemoved ? <Eye size={11} /> : <EyeOff size={11} />} {removedCount} removed
+          </button>
+        )}
+        <span className="text-fg-4 hidden 2xl:inline whitespace-nowrap">· click to seek · drag to select · <span className="kbd">⌫</span> cuts the selection</span>
         <div className="flex-1" />
+        {selRange && selectedCount > 0 && (
+          <button className="btn h-6 px-2 text-[11.5px] text-amber border-amber/40 bg-amber/10 hover:bg-amber/20 hover:text-amber hover:border-amber/60" onClick={() => void cutSelected()} disabled={isRendering} title="Remove these words and their audio (Backspace)">
+            <Scissors size={12} /> Cut {selectedCount} word{selectedCount === 1 ? '' : 's'}
+          </button>
+        )}
         {activeIdx >= 0 && <span className="mono text-fg-4">{formatTime(words[activeIdx].start, { ms: true })}</span>}
-        <button className="btn btn-ghost h-6 px-1.5 text-[11px] text-fg-3" title={`Ignore caches and transcribe again with ${engine === 'local' ? 'local Whisper' : 'OpenAI'}`} onClick={() => void ensureTranscript({ force: true })}><RefreshCw size={11} /> Re-transcribe</button>
+        <button className="btn btn-ghost h-6 px-1.5 text-[11px] text-fg-3 whitespace-nowrap" title={`Ignore caches and transcribe again with ${engine === 'local' ? 'local Whisper' : 'OpenAI'}`} onClick={() => void ensureTranscript({ force: true })}><RefreshCw size={11} /> Re-transcribe</button>
         <button className={cx('btn btn-ghost h-6 px-1.5 text-[11px] text-fg-3', showSettings && 'text-fg bg-panel-3')} title="Transcription engine settings" aria-label="Transcription settings" onClick={() => setShowSettings((v) => !v)}>
           {showSettings ? <X size={12} /> : <Settings2 size={12} />}
         </button>
@@ -163,12 +234,15 @@ export function TranscriptPanel() {
         </div>
       ) : (
         <div ref={activeRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-3 text-[14px] leading-[1.9] text-fg">
-          {words.map((w, i) => (
-            <span key={i}>
-              {w.para && <br />}
-              <Word w={w} i={i} active={i === activeIdx} selected={!!selRange && i >= selRange.lo && i <= selRange.hi} onDown={onDown} onEnter={onEnter} />{' '}
-            </span>
-          ))}
+          {words.map((w, i) => {
+            if (w.removed && !showRemoved) return null;
+            return (
+              <span key={w.id}>
+                {w.para && <br />}
+                <Word w={w} i={i} active={i === activeIdx} selected={!w.removed && !!selRange && i >= selRange.lo && i <= selRange.hi} onDown={onDown} onEnter={onEnter} onRestore={(op) => void onRestore(op)} />{' '}
+              </span>
+            );
+          })}
         </div>
       )}
     </div>

@@ -9,6 +9,7 @@ import { useStore } from './store/useStore';
 import { useKeyboard } from './hooks/useKeyboard';
 import { useWebMCP } from './hooks/useWebMCP';
 import { runSampleSession } from './lib/sampleSession';
+import { ConfirmModal } from './components/ConfirmModal';
 
 let demoParamHandled = false;
 
@@ -47,6 +48,7 @@ export default function App() {
         </main>
         <ProposalsPanel />
       </div>
+      <ConfirmModal />
       <div className="hidden max-[1023px]:flex fixed inset-0 z-50 items-center justify-center bg-bg/95 p-8 text-center">
         <div className="max-w-sm">
           <div className="text-[15px] font-semibold">Earshot is best on desktop</div>

@@ -13,7 +13,7 @@ import type { Marker } from '../types';
 const SEL_ID = 'sel';
 const TIMELINE_H = 22;
 
-const KIND_GLYPH: Record<Marker['kind'], string> = { cut: '✂', gain: '◐', fade: '◢', filter: '≋', comment: '✎' };
+const KIND_GLYPH: Record<Marker['kind'], string> = { cut: '✂', gain: '◐', fade: '◢', filter: '≋', comment: '✎', chapter: '§' };
 
 function labelFor(m: Marker): string {
   const extra =
@@ -51,9 +51,9 @@ function styleMarker(r: Region, m: Marker, focused: boolean, animate: boolean) {
   el.style.cursor = 'pointer';
   el.style.overflow = 'hidden';
   el.style.zIndex = focused ? '4' : '2';
-  if (m.kind === 'comment') {
+  if (m.kind === 'comment' || m.kind === 'chapter') {
     el.style.background = 'transparent';
-    el.style.borderLeft = `1px dashed rgba(${grey},0.9)`;
+    el.style.borderLeft = m.kind === 'chapter' ? `2px solid rgba(${teal},0.9)` : `1px dashed rgba(${grey},0.9)`;
     el.style.borderRight = 'none';
     el.style.minWidth = '3px';
   } else {
@@ -143,12 +143,19 @@ export function WaveformPanel() {
     wsRef.current = ws;
     regionsRef.current = regions;
     player.attach(ws);
+    player.zoomToRange = (start, end) => {
+      const d = ws.getDuration();
+      if (!d || end <= start) return;
+      st().setZoom(Math.max(1, Math.min(40, (0.8 * d) / (end - start))));
+      setTimeout(() => player.scrollTo(Math.max(0, start - 0.1 * (end - start))), 60);
+    };
 
     const st = useStore.getState;
     ws.on('ready', () => { setReadyTick((t) => t + 1); applyZoom(); });
     ws.on('timeupdate', (t) => {
       const s = st();
       s.setPlayhead(t);
+      if (player.stopAt != null && t >= player.stopAt - 0.02) { player.stopAt = null; ws.pause(); return; }
       if (s.loopSelection && s.selection && ws.isPlaying() && t >= s.selection.end - 0.02) ws.setTime(s.selection.start);
     });
     ws.on('play', () => st().setPlaying(true));
@@ -245,7 +252,7 @@ export function WaveformPanel() {
       let r = markerRegions.current.get(id);
       const isNew = !r;
       if (!r) {
-        r = regions.addRegion({ id, start: wr.start, end: wr.end, drag: false, resize: false, content: m.kind === 'comment' ? undefined : labelFor(m) });
+        r = regions.addRegion({ id, start: wr.start, end: wr.end, drag: false, resize: false, content: m.kind === 'comment' || m.kind === 'chapter' ? undefined : labelFor(m) });
         markerRegions.current.set(id, r);
         r.on('over', () => setTooltip({ x: mouse.current.x, y: mouse.current.y, marker: m }));
         r.on('leave', () => setTooltip(null));

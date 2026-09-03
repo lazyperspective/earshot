@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { player } from '../audio/player';
-import { reviewMarker } from '../lib/review';
+import { reviewMarker, exitReview, setRejectReason, getLastRejectedId, previewFocused } from '../lib/review';
 import { previewMarker, stopPreview } from '../audio/preview';
+import { performRangeOps, REJECT_REASONS } from '../webmcp/toolsExtra';
+import { formatTime } from '../lib/format';
 
 function isTyping(e: KeyboardEvent): boolean {
   const el = e.target as HTMLElement | null;
@@ -27,6 +29,7 @@ export function useKeyboard() {
       }
       if (e.code === 'Space') {
         e.preventDefault();
+        if (s.review.active && s.focusedMarkerId) { if (s.previewingId) stopPreview(); else previewFocused(); return; }
         void player.playPause();
         return;
       }
@@ -45,8 +48,19 @@ export function useKeyboard() {
         return;
       }
       if (e.key === 'Escape') {
+        if (s.review.active) { exitReview(); return; }
+        if (s.confirm) return;
         s.setSelection(null);
         s.setFocusedMarker(null);
+        return;
+      }
+      if ((e.key === 'Backspace' || e.key === 'Delete') && s.selection && s.bottomTab !== 'transcript') {
+        e.preventDefault();
+        const sel = s.selection;
+        void performRangeOps([{ kind: 'cut', start: sel.start, end: sel.end, note: `Cut by you: ${formatTime(sel.start, { ms: true })}–${formatTime(sel.end, { ms: true })}` }], 'apply', 'human').then((out) => {
+          useStore.getState().logActivity({ tool: 'cut_selection', args: { start: sel.start, end: sel.end }, result: out, summary: `Cut ${(sel.end - sel.start).toFixed(2)}s of selection`, durationMs: 0, ok: true, source: 'ui', access: 'write' });
+          useStore.getState().setSelection(null);
+        });
         return;
       }
       if (e.key === 'ArrowLeft') { e.preventDefault(); player.skip(e.shiftKey ? -5 : -1); return; }
@@ -57,23 +71,28 @@ export function useKeyboard() {
         if (m) { if (s.previewingId === m.id) stopPreview(); else void previewMarker(m); }
         return;
       }
+      if (/^[1-4]$/.test(e.key) && s.review.active) {
+        const id = getLastRejectedId();
+        if (id) setRejectReason(id, REJECT_REASONS[Number(e.key) - 1]);
+        return;
+      }
 
       // proposal review
       const focused = s.focusedMarkerId ? s.markers.find((m) => m.id === s.focusedMarkerId) : null;
-      const pendingOrder = s.markers.filter((m) => m.status === 'pending' || m.status === 'approved');
-      if (e.key.toLowerCase() === 'a' && focused) {
+      const order = s.markers.filter((m) => m.status === 'pending' || m.status === 'approved');
+      if (e.key.toLowerCase() === 'a' && focused && focused.status === 'pending') {
         reviewMarker(focused.id, 'approved');
-        focusNext(focused.id, pendingOrder);
+        if (!useStore.getState().review.active) focusNext(focused.id, order);
         return;
       }
-      if (e.key.toLowerCase() === 'r' && focused) {
+      if (e.key.toLowerCase() === 'r' && focused && (focused.status === 'pending' || focused.status === 'approved')) {
         reviewMarker(focused.id, 'rejected');
-        focusNext(focused.id, pendingOrder);
+        if (!useStore.getState().review.active) focusNext(focused.id, order);
         return;
       }
-      if ((e.key === 'j' || e.key === 'k') && pendingOrder.length) {
-        const idx = focused ? pendingOrder.findIndex((m) => m.id === focused.id) : -1;
-        const next = e.key === 'j' ? pendingOrder[Math.min(pendingOrder.length - 1, idx + 1)] : pendingOrder[Math.max(0, idx - 1)];
+      if ((e.key === 'j' || e.key === 'k') && order.length) {
+        const idx = focused ? order.findIndex((m) => m.id === focused.id) : -1;
+        const next = e.key === 'j' ? order[Math.min(order.length - 1, idx + 1)] : order[Math.max(0, idx - 1)];
         if (next) s.setFocusedMarker(next.id);
       }
     };

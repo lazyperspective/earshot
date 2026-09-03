@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type {
   ActivityEntry, Author, BottomTab, EDL, EditOp, Marker, MarkerEdit, MarkerKind, MarkerStatus,
   Selection, TranscriptState, WebMCPStatus, TranscriptionSettings, LocalWhisperState, TranscriptionEngine, LocalModelKey,
+  ReviewState, Preferences, ConfirmRequest,
 } from '../types';
 import { decodeAudio } from '../audio/decode';
 import { renderEdl } from '../audio/render';
@@ -21,6 +22,10 @@ export interface NewMarkerInput {
   author: Author;
   edit?: MarkerEdit;
   status?: MarkerStatus;
+  text?: string;
+  wordRange?: { from: number; to: number };
+  /** Already-applied cut: the op id this marker records. */
+  appliedOpId?: string;
 }
 
 export interface ApplyResult {
@@ -48,6 +53,10 @@ export interface EarshotState {
   transcript: TranscriptState;
   transcription: TranscriptionSettings;
   localWhisper: LocalWhisperState;
+  preferences: Preferences;
+  review: ReviewState;
+  confirm: ConfirmRequest | null;
+  showRemovedWords: boolean;
 
   selection: Selection | null;
   playhead: number;
@@ -80,6 +89,15 @@ export interface EarshotState {
   removeMarker: (id: string) => void;
   clearProposals: () => number;
   applyMarkers: (ids?: string[], force?: boolean) => Promise<ApplyResult>;
+  /** Append ops and their (already 'applied') markers in one undoable step. Marker times are SOURCE seconds. */
+  applyOpsWithMarkers: (ops: EditOp[], markers: NewMarkerInput[]) => Promise<Marker[]>;
+  /** Remove one applied cut op (by op id or marker id); the marker becomes rejected+restored. */
+  restoreCut: (id: string) => Promise<Marker | null>;
+  setMarkerFeedback: (id: string, reason: string) => void;
+  setReview: (patch: Partial<ReviewState>) => void;
+  setPreferences: (patch: Partial<Preferences>) => void;
+  setConfirm: (req: ConfirmRequest | null) => void;
+  toggleShowRemoved: () => void;
 
   // transport / ui
   setSelection: (sel: Selection | null) => void;
@@ -105,7 +123,7 @@ export const getCuts = (s: Pick<EarshotState, 'edl'>): Range[] => cutsFromEdl(s.
 
 /** Marker range on the working timeline, or null when it lies entirely inside an applied cut. */
 export function markerWorkingRange(m: Marker, cuts: Range[]): Range | null {
-  if (m.kind === 'comment' || m.end - m.start <= 1e-6) {
+  if (m.kind === 'comment' || m.kind === 'chapter' || m.end - m.start <= 1e-6) {
     const t = sourceToWorking(m.start, cuts);
     return { start: t, end: t };
   }
@@ -128,6 +146,7 @@ export function markerToOp(m: Marker): EditOp | null {
         ? { id, type: 'highpass', start: m.start, end: m.end, frequencyHz: m.edit?.frequencyHz ?? 80 }
         : { id, type: 'notch_filter', start: m.start, end: m.end, frequencyHz: m.edit?.frequencyHz ?? 60, q: 30 };
     case 'comment':
+    case 'chapter':
       return null;
   }
 }
@@ -167,6 +186,17 @@ function loadSettings(): TranscriptionSettings {
 }
 function saveSettings(s: TranscriptionSettings) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* ignore */ } }
 
+const PREFS_KEY = 'earshot.preferences.v1';
+export const DEFAULT_PREFERENCES: Preferences = { keep_fillers: [], max_pause_s: 0.6, filler_confidence: 'high', style_notes: '' };
+function loadPreferences(): Preferences {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (raw) return { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) };
+  } catch { /* ignore */ }
+  return { ...DEFAULT_PREFERENCES };
+}
+function savePreferences(p: Preferences) { try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch { /* ignore */ } }
+
 let renderChain: Promise<void> = Promise.resolve();
 
 export const useStore = create<EarshotState>()((set, get) => ({
@@ -174,6 +204,10 @@ export const useStore = create<EarshotState>()((set, get) => ({
   renderVersion: 0,
   transcription: loadSettings(),
   localWhisper: { status: 'idle', progress: 0, device: null, modelId: null },
+  preferences: loadPreferences(),
+  review: { active: false, ids: null, message: null, startedAt: null },
+  confirm: null,
+  showRemovedWords: true,
   bottomTab: 'transcript',
   activityLog: [],
   webmcp: { available: false, native: false, polyfill: false, toolCount: 0, readCount: 0, writeCount: 0, lastCallAt: null },
@@ -265,7 +299,7 @@ export const useStore = create<EarshotState>()((set, get) => ({
   addMarker: (input) => {
     const cuts = getCuts(get());
     const start = workingToSource(Math.min(input.start, input.end), cuts);
-    const end = input.kind === 'comment' ? start : workingToSource(Math.max(input.start, input.end), cuts);
+    const end = input.kind === 'comment' || input.kind === 'chapter' ? start : workingToSource(Math.max(input.start, input.end), cuts);
     const marker: Marker = {
       id: uid('m'),
       kind: input.kind,
@@ -273,9 +307,12 @@ export const useStore = create<EarshotState>()((set, get) => ({
       end,
       note: input.note,
       author: input.author,
-      status: input.status ?? (input.kind === 'comment' ? 'applied' : 'pending'),
+      status: input.status ?? (input.kind === 'comment' || input.kind === 'chapter' ? 'applied' : 'pending'),
       createdAt: Date.now(),
       edit: input.edit,
+      ...(input.text ? { text: input.text } : {}),
+      ...(input.wordRange ? { wordRange: input.wordRange } : {}),
+      ...(input.appliedOpId ? { appliedOpId: input.appliedOpId } : {}),
     };
     set((s) => ({ markers: [...s.markers, marker], lastProposalAt: input.author === 'agent' ? Date.now() : s.lastProposalAt }));
     return marker;
@@ -286,7 +323,7 @@ export const useStore = create<EarshotState>()((set, get) => ({
     set((s) => ({
       markers: s.markers.map((m) => {
         if (m.id !== id || m.status === 'applied') return m;
-        out = { ...m, status };
+        out = { ...m, status, ...(status === 'approved' || status === 'rejected' ? { decidedAt: Date.now() } : {}) };
         return out;
       }),
     }));
@@ -328,6 +365,43 @@ export const useStore = create<EarshotState>()((set, get) => ({
     }
     return { applied, skipped, newDuration: get().workingBuffer?.duration ?? 0 };
   },
+
+  applyOpsWithMarkers: async (ops, inputs) => {
+    const s = get();
+    if (!s.sourceBuffer) return [];
+    const created: Marker[] = inputs.map((input) => ({
+      id: uid('m'),
+      kind: input.kind,
+      start: input.start,
+      end: input.end,
+      note: input.note,
+      author: input.author,
+      status: 'applied',
+      createdAt: Date.now(),
+      edit: input.edit,
+      ...(input.text ? { text: input.text } : {}),
+      ...(input.wordRange ? { wordRange: input.wordRange } : {}),
+      ...(input.appliedOpId ? { appliedOpId: input.appliedOpId } : {}),
+    }));
+    await get().commitEdl([...s.edl, ...ops], [...s.markers, ...created]);
+    return created;
+  },
+
+  restoreCut: async (id) => {
+    const s = get();
+    const marker = s.markers.find((m) => m.id === id || m.appliedOpId === id) ?? null;
+    const opId = marker?.appliedOpId ?? id;
+    if (!s.edl.some((op) => op.id === opId)) return null;
+    const markers = s.markers.map((m) => (m.appliedOpId === opId ? { ...m, status: 'rejected' as const, feedback: { ...(m.feedback ?? {}), restored: true, at: Date.now() } } : m));
+    await get().commitEdl(s.edl.filter((op) => op.id !== opId), markers);
+    return get().markers.find((m) => m.appliedOpId === opId) ?? marker;
+  },
+
+  setMarkerFeedback: (id, reason) => set((s) => ({ markers: s.markers.map((m) => (m.id === id ? { ...m, feedback: { ...(m.feedback ?? {}), reason, at: Date.now() } } : m)) })),
+  setReview: (patch) => set((s) => ({ review: { ...s.review, ...patch } })),
+  setPreferences: (patch) => set((s) => { const p = { ...s.preferences, ...patch }; savePreferences(p); return { preferences: p }; }),
+  setConfirm: (confirm) => set({ confirm }),
+  toggleShowRemoved: () => set((s) => ({ showRemovedWords: !s.showRemovedWords })),
 
   // ---------- transport / ui ----------
   setSelection: (sel) => {
