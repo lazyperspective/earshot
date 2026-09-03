@@ -99,7 +99,8 @@
 }
 
 /* wavesurfer overrides */
-.ws-wrap ::part(cursor) { background: #E7EBF0; width: 1px; }
+.ws-wrap ::part(cursor) { background: #E7EBF0; width: 1px; box-shadow: 0 0 10px 1px rgba(46,230,197,0.45); }
+.ws-wrap ::part(wrapper) { background: radial-gradient(120% 90% at 50% 50%, rgba(46,230,197,0.035) 0%, rgba(11,13,16,0) 60%); }
 .ws-wrap ::part(cursor)::before { content: ""; position: absolute; top: 0; left: -4px; width: 9px; height: 9px; background: #E7EBF0; border-radius: 0 0 6px 6px; }
 .ws-wrap ::part(region) { border-radius: 3px; }
 .ws-wrap ::part(region-selection) { background: rgba(245, 185, 66, 0.16); border-left: 1px solid rgba(245, 185, 66, 0.9); border-right: 1px solid rgba(245, 185, 66, 0.9); }

@@ -10,6 +10,7 @@ import { player } from '../audio/player';
 import { formatTime } from '../lib/format';
 import type { Marker } from '../types';
 import { AgentFxLayer, type FxMap } from './AgentFxLayer';
+import { makeBarRenderer } from '../audio/renderBars';
 
 const SEL_ID = 'sel';
 const TIMELINE_H = 22;
@@ -138,18 +139,18 @@ export function WaveformPanel() {
     const ws = WaveSurfer.create({
       container,
       height: Math.max(80, container.clientHeight - TIMELINE_H),
-      waveColor: '#3B4756',
-      progressColor: '#93A3B5',
+      // Vertical gradients (top → bottom). Unplayed: slate; played: bright teal → deep teal.
+      waveColor: ['#4A5868', '#6B7C8F', '#4A5868'],
+      progressColor: ['#9BFAE8', '#2EE6C5', '#0F8A73'],
       cursorColor: '#E7EBF0',
       cursorWidth: 1,
-      barWidth: 2,
-      barGap: 1,
-      barRadius: 2,
+      renderFunction: makeBarRenderer(),
       normalize: false,
       dragToSeek: false,
       autoScroll: true,
       autoCenter: false,
       fillParent: true,
+      hideScrollbar: true,
       minPxPerSec: 1,
       plugins: [timeline, hover, regions],
     });
