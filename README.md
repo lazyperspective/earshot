@@ -7,7 +7,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2EE6C5.svg" /></a>
   <img alt="WebMCP" src="https://img.shields.io/badge/WebMCP-document.modelContext-2EE6C5.svg" />
-  <img alt="Tools" src="https://img.shields.io/badge/tools-42%20%C2%B7%2014%20read%20%C2%B7%2028%20write-0B0D10.svg" />
+  <img alt="Tools" src="https://img.shields.io/badge/tools-42%20%C2%B7%2013%20read%20%C2%B7%2029%20write-0B0D10.svg" />
 </p>
 
 Earshot is a browser-based audio editor for podcasters and voice creators where the AI agent can actually **hear** the recording. Through [WebMCP](https://webmachinelearning.github.io/webmcp/) it exposes the editor's ears — silence detection, loudness, clipping, a word-level transcript — and its hands — cut, gain, fade, filter — as first-class tools on `document.modelContext`. The agent listens, **proposes** edits on the timeline, and the human approves them with their own ears before anything is applied. Every edit is non-destructive, undoable, and exportable as WAV. Built for the OpenAI WebMCP Challenge.
