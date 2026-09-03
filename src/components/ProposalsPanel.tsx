@@ -64,15 +64,15 @@ export function ProposalsPanel() {
       <div className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-line">
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-semibold">Proposals</span>
-          {pending > 0 && <span className="chip bg-accent/12 text-accent">{pending} pending</span>}
+          {pending > 0 && <span className="chip bg-accent/12 text-accent whitespace-nowrap">{pending} pending</span>}
           {pending === 0 && approved > 0 && <span className="chip bg-panel-3 text-fg-2">{approved} approved</span>}
         </div>
         <div className="flex items-center gap-1.5">
           {pending > 0 && !review.active && (
-            <button className="btn h-7 px-2 text-[12px]" onClick={() => startReview()} title="Review mode: auto-plays each proposal, A/R to decide"><ListChecks size={13} /> Review</button>
+            <button className="btn btn-icon h-7 w-7" onClick={() => startReview()} title="Review mode: auto-plays each proposal, A/R to decide" aria-label="Start review mode"><ListChecks size={13} /></button>
           )}
-          <button className="btn h-7 px-2.5 text-[12px]" disabled={pending === 0} onClick={approveAll} title="Approve every pending proposal">Approve all</button>
-          <button className="btn btn-primary h-7 px-2.5 text-[12px]" disabled={approved === 0 || isRendering} onClick={() => void applyApproved()} title="Apply approved proposals to the edit list (⌘Z to undo)">
+          <button className="btn h-7 px-2 text-[12px] whitespace-nowrap" disabled={pending === 0} onClick={approveAll} title="Approve every pending proposal">Approve all</button>
+          <button className="btn btn-primary h-7 px-2.5 text-[12px] whitespace-nowrap" disabled={approved === 0 || isRendering} onClick={() => void applyApproved()} title="Apply approved proposals to the edit list (⌘Z to undo)">
             Apply{approved > 0 ? ` ${approved}` : ''}
           </button>
         </div>
