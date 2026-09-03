@@ -6,7 +6,7 @@ import type { ActivityEntry } from '../types';
 
 interface Toast { id: string; tool: string; access: 'read' | 'write'; source: ActivityEntry['source']; status: 'running' | 'done' | 'error'; summary?: string; ms?: number; born: number; leaving: boolean }
 
-const SOURCE: Record<ActivityEntry['source'], string> = { webmcp: 'WebMCP', console: 'Console', replay: 'Replay', ui: 'You' };
+const SOURCE: Record<ActivityEntry['source'], string> = { webmcp: 'Agent', console: 'Console', replay: 'Replay', ui: 'You' };
 const MIN_VISIBLE = 1700;
 
 /** HUD by the status pill: one line per agent tool call, narrating what the agent is doing. */

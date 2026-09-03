@@ -103,3 +103,8 @@ Running log of product and engineering decisions made while building Earshot. Ne
 - **Large-file mode.** Compressed files over 20 MB (roughly 20+ minutes of MP3) are decoded straight to mono 24 kHz, cutting a two-hour episode from ~3 GB to ~700 MB of samples; a chip in the top bar says so and export is mono 24 kHz WAV.
 - **No WAV blob for untouched files.** Playback uses the original file until the first edit; only edited audio is rendered to WAV. Transcription resamples one chunk at a time instead of the whole file.
 - **`detect_silences` accepts start/end/limit** and returns the longest gaps when truncated, so a two-hour scan does not flood the agent's context.
+
+## Post-submission — Product polish
+
+- **No "demo" surfaces in the product.** The landing has one primary action (Open audio file) with the sample episode as a quiet text link; the Activity tab no longer offers a scripted replay (it stays reachable via `?demo=agent` for screenshots); the status pill says "Agent connected · N tools" or "N agent tools ready" instead of naming the polyfill, and clicking it opens a "Connect an agent" guide; feed and HUD label calls "Agent" rather than "WebMCP"; transcription cards describe outcomes ("Whisper on your GPU · nothing uploaded") rather than plumbing.
+- **The landing explains the loop in three steps** (Open · Ask your agent · Approve) so a first-time visitor understands the product without reading the README.

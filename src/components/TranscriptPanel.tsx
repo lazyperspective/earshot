@@ -65,7 +65,7 @@ const Word = memo(function Word({ w, i, active, selected, fx, onDown, onEnter, o
 });
 
 function engineLabel(engine?: string, model?: string): string {
-  if (engine === 'bundled') return 'bundled demo transcript';
+  if (engine === 'bundled') return 'sample transcript';
   if (engine === 'local') return `Local Whisper · ${model ?? ''}`;
   if (engine === 'openai') return `OpenAI · ${model ?? 'whisper-1'}`;
   return model ?? 'transcript';
@@ -195,7 +195,7 @@ export function TranscriptPanel() {
       <Center>
         <div className="text-[13px] text-fg-2 mb-1">No transcript yet. Choose how to transcribe:</div>
         <TranscriptionSettings hasTranscript={false} />
-        <div className="text-[11.5px] text-fg-4 mt-1">Your agent can also call <span className="mono text-fg-3">get_transcript</span> — it uses the engine selected here. The demo clip ships with a bundled transcript.</div>
+        <div className="text-[11.5px] text-fg-4 mt-1">Your agent can also transcribe on demand; it uses the engine selected here.</div>
       </Center>
     );
   }

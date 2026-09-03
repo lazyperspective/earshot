@@ -86,7 +86,7 @@ Implementation notes (current spec, Sept 2026):
 ## Try it with ChatGPT / Codex
 
 1. Open the deployed app in the ChatGPT desktop app's built-in browser (GPT-5.6 Sol or Terra): **https://earshot-beige.vercel.app** (or your own deployment).
-2. Click **Load demo podcast clip** (or drop your own MP3/WAV/M4A).
+2. Click **try a sample episode** (or drop your own MP3/WAV/M4A).
 3. Click the **Site tools** icon in the address bar — you should see 43 tools with the read/write split.
 4. Send:
 
@@ -97,7 +97,7 @@ Implementation notes (current spec, Sept 2026):
 ## Try it in Chrome (no agent needed)
 
 - Enable `chrome://flags/#enable-webmcp-testing` and use any WebMCP-aware extension or the DevTools console (`await document.modelContext.getTools()`), **or**
-- Use the built-in **Tool Console** tab: pick a tool, edit the JSON arguments, run it, and read exactly what an agent would receive. The **Activity** tab's *"Replay a sample agent session"* runs a scripted sequence through the same tool path (no model involved) so you can see the loop end to end. `?demo=1` auto-loads the clip; `?demo=agent` also runs the replay.
+- Use the built-in **Tool Console** tab: pick a tool, edit the JSON arguments, run it, and read exactly what an agent would receive. `?demo=1` opens the sample episode; `?demo=agent` additionally replays a scripted agent session through the same tool path (no model involved), which is how the screenshots were made.
 
 ## Transcription engines
 

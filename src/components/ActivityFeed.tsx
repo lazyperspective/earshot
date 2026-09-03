@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { ChevronRight, PlayCircle, Radio } from 'lucide-react';
+import { ChevronRight, Radio } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { clockTime, cx } from '../lib/format';
 import type { ActivityEntry } from '../types';
-import { runSampleSession } from '../lib/sampleSession';
 
-const SOURCE_LABEL: Record<ActivityEntry['source'], string> = { webmcp: 'WebMCP', console: 'Console', ui: 'You', replay: 'Replay' };
+const SOURCE_LABEL: Record<ActivityEntry['source'], string> = { webmcp: 'Agent', console: 'Console', ui: 'You', replay: 'Replay' };
 
 export function ActivityFeed() {
   const log = useStore((s) => s.activityLog);
@@ -15,12 +14,8 @@ export function ActivityFeed() {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center gap-2 px-8">
         <Radio size={18} className="text-fg-4" />
-        <div className="text-[13px] text-fg-2">Waiting for your agent.</div>
-        <div className="text-[12px] text-fg-4 max-w-[400px]">Every WebMCP tool call — name, arguments, result and timing — streams here live. Open this page in an agent browser, or use the Tool Console.</div>
-        <button className="btn mt-1" onClick={() => void runSampleSession()} title="Runs the same tools an agent would, through the same code path. No model involved.">
-          <PlayCircle size={14} /> Replay a sample agent session
-        </button>
-        <div className="text-[11px] text-fg-4">Scripted locally · same tool path · no model</div>
+        <div className="text-[13px] text-fg-2">Nothing yet.</div>
+        <div className="text-[12px] text-fg-4 max-w-[400px]">Everything your agent does — each tool call with its arguments, result and timing — and every decision you make shows up here.</div>
       </div>
     );
   }

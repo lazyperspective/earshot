@@ -47,13 +47,13 @@ export function TopBar() {
   const trimmed = duration != null && sourceDuration != null && Math.abs(sourceDuration - duration) > 0.005;
 
   return (
-    <header className="relative h-14 shrink-0 flex items-center gap-4 px-4 border-b border-line bg-panel/80 backdrop-blur">
+    <header className="relative z-30 h-14 shrink-0 flex items-center gap-4 px-4 border-b border-line bg-panel/80 backdrop-blur">
       {laser && <span className="fx-laser" aria-hidden="true" />}
       <div className="flex items-center gap-2.5 min-w-[220px]">
         <Logo />
         <div className="leading-tight">
           <div className="text-[15px] font-semibold tracking-tight">Earshot</div>
-          <div className="text-[11px] text-fg-3 -mt-0.5">Your agent can hear now.</div>
+          {!hasAudio && <div className="text-[11px] text-fg-3 -mt-0.5">Your agent can hear now.</div>}
         </div>
       </div>
 
@@ -71,9 +71,7 @@ export function TopBar() {
             {largeFileMode && <span className="chip bg-amber/12 text-amber whitespace-nowrap" title="Long recording: decoded as mono 24 kHz (speech quality) to keep memory and rendering fast. Export is mono 24 kHz WAV.">large file</span>}
             <button className="btn btn-icon btn-ghost h-6 w-6 text-fg-3" title="Close file" aria-label="Close file" onClick={closeProject}><X size={13} /></button>
           </>
-        ) : (
-          <span className="text-[13px] text-fg-3">No file loaded</span>
-        )}
+        ) : null}
       </div>
 
       <WebMCPPill />

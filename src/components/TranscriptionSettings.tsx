@@ -29,14 +29,14 @@ export function TranscriptionSettings({ hasTranscript, onDone }: { hasTranscript
     <div className="w-full max-w-[560px] text-left">
       <div className="text-[10.5px] uppercase tracking-wider text-fg-4 font-semibold mb-2">Transcription engine</div>
       <div className="grid grid-cols-2 gap-2">
-        <EngineCard active={engine === 'openai'} onClick={() => setEngine('openai')} icon={<Cloud size={15} />} title="OpenAI Whisper API" sub="Server key · whisper-1 · word timestamps" />
-        <EngineCard active={engine === 'local'} onClick={() => setEngine('local')} icon={<Cpu size={15} />} title="Local · WebGPU" sub="Runs in your browser · nothing uploaded" />
+        <EngineCard active={engine === 'openai'} onClick={() => setEngine('openai')} icon={<Cloud size={15} />} title="OpenAI Whisper" sub="Fast and accurate · needs the server key" />
+        <EngineCard active={engine === 'local'} onClick={() => setEngine('local')} icon={<Cpu size={15} />} title="On this device" sub="Whisper on your GPU · nothing uploaded" />
       </div>
 
       {engine === 'openai' ? (
         <div className="mt-3 rounded-lg border border-line bg-panel-2 p-3">
           <p className="text-[12.5px] text-fg-3 leading-relaxed">
-            Audio is resampled to 16 kHz mono and sent in ≤ 2-minute chunks to <span className="mono text-fg-2">/api/transcribe</span>, which calls OpenAI with the server's <span className="mono text-fg-2">OPENAI_API_KEY</span>. Nothing is stored server-side.
+            Audio is sent to OpenAI's Whisper in short chunks through Earshot's server, which holds the API key. Word timestamps included; nothing is stored.
           </p>
           <div className="mt-3 flex items-center gap-2">
             <button className="btn btn-primary" onClick={() => run(hasTranscript)}>
@@ -57,7 +57,7 @@ export function TranscriptionSettings({ hasTranscript, onDone }: { hasTranscript
             </span>
           </div>
           <p className="mt-2 text-[12.5px] text-fg-3 leading-relaxed">
-            Whisper runs entirely in a Web Worker on your GPU via transformers.js. The model downloads once (from Hugging Face) and is cached by your browser; audio never leaves your device.
+            Whisper runs on your GPU, inside this browser. The model downloads once and stays cached; your audio never leaves your device.
           </p>
 
           {local.status === 'error' && (

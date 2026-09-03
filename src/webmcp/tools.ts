@@ -34,7 +34,7 @@ export const ts = (t: number) => formatTime(t, { ms: true });
 export function requireAudio() {
   const s = useStore.getState();
   if (!s.workingBuffer || !s.sourceBuffer) {
-    throw new ToolError('No audio is loaded. Ask the user to drop a file or click "Load demo podcast clip", then call get_status.');
+    throw new ToolError('No audio is loaded. Ask the user to open a recording in Earshot (or try the sample episode), then call get_status.');
   }
   return { s, buffer: s.workingBuffer, duration: s.workingBuffer.duration };
 }
@@ -134,14 +134,14 @@ export function getIdleToolDefs(): ToolDef[] {
   return [
     {
       name: 'get_status',
-      description: 'Get the state of the Earshot audio editor. No audio is loaded yet: the app is waiting for the user to drop an audio file or click "Load demo podcast clip". Call this to check whether audio has appeared; once it has, the full tool set (silence detection, loudness, transcript, proposals) becomes available.',
+      description: 'Get the state of the Earshot audio editor. No audio is loaded yet: the app is waiting for the user to open a recording. Call this to check whether audio has appeared; once it has, the full tool set (silence detection, loudness, transcript, cuts, proposals) becomes available.',
       inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
       readOnly: true,
       destructive: false,
       example: {},
       execute: () => ({
         loaded: false,
-        message: 'Waiting for the user to load an audio file. Ask them to drop a file onto Earshot or click "Load demo podcast clip".',
+        message: 'Waiting for the user to open an audio file. Ask them to drop a recording onto Earshot (or try the sample episode).',
         tools_available_after_load: 23,
       }),
       summarize: () => 'Waiting for audio',
